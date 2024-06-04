@@ -30,12 +30,13 @@ from diffusion_policy.model.common.lr_scheduler import get_scheduler
 
 OmegaConf.register_new_resolver("eval", eval, replace=True)
 
+
 class TrainDiffusionUnetVideoWorkspace(BaseWorkspace):
     include_keys = ['global_step', 'epoch']
 
     def __init__(self, cfg: OmegaConf, output_dir=None):
         super().__init__(cfg, output_dir=output_dir)
-        
+
         # set seed
         seed = cfg.training.seed
         torch.manual_seed(seed)
@@ -84,11 +85,11 @@ class TrainDiffusionUnetVideoWorkspace(BaseWorkspace):
             optimizer=self.optimizer,
             num_warmup_steps=cfg.training.lr_warmup_steps,
             num_training_steps=(
-                len(train_dataloader) * cfg.training.num_epochs) \
-                    // cfg.training.gradient_accumulate_every,
+                                       len(train_dataloader) * cfg.training.num_epochs) \
+                               // cfg.training.gradient_accumulate_every,
             # pytorch assumes stepping LRScheduler every epoch
             # however huggingface diffusers steps it every batch
-            last_epoch=self.global_step-1
+            last_epoch=self.global_step - 1
         )
 
         # configure ema
@@ -135,8 +136,8 @@ class TrainDiffusionUnetVideoWorkspace(BaseWorkspace):
 
         # training loop
         for _ in range(cfg.training.num_epochs):
-            with tqdm.tqdm(train_dataloader, desc=f"Training epoch {self.epoch}", 
-                    leave=False, mininterval=cfg.training.tqdm_interval_sec) as tepoch:
+            with tqdm.tqdm(train_dataloader, desc=f"Training epoch {self.epoch}",
+                           leave=False, mininterval=cfg.training.tqdm_interval_sec) as tepoch:
                 for batch in tepoch:
                     # device transfer
                     batch = dict_apply(batch, lambda x: x.to(device, non_blocking=True))
@@ -151,7 +152,7 @@ class TrainDiffusionUnetVideoWorkspace(BaseWorkspace):
                         self.optimizer.step()
                         self.optimizer.zero_grad()
                         lr_scheduler.step()
-                    
+
                     # update ema
                     if cfg.training.use_ema:
                         ema.step(self.model)
@@ -204,7 +205,7 @@ class TrainDiffusionUnetVideoWorkspace(BaseWorkspace):
                             batch = dict_apply(val_batch, lambda x: x.to(device, non_blocking=True))
                             obs_dict = batch['obs']
                             gt_action = batch['action']
-                            
+
                             result = policy.predict_action(obs_dict)
                             pred_action = result['action_pred']
                             mse = torch.nn.functional.mse_loss(pred_action, gt_action)
@@ -223,13 +224,15 @@ class TrainDiffusionUnetVideoWorkspace(BaseWorkspace):
                     self.global_step += 1
             self.epoch += 1
 
+
 @hydra.main(
     version_base=None,
-    config_path=str(pathlib.Path(__file__).parent.parent.joinpath("config")), 
+    config_path=str(pathlib.Path(__file__).parent.parent.joinpath("config")),
     config_name=pathlib.Path(__file__).stem)
 def main(cfg):
     workspace = TrainDiffusionUnetVideoWorkspace(cfg)
     workspace.run()
+
 
 if __name__ == "__main__":
     main()
