@@ -14,6 +14,7 @@ import scipy.ndimage as sn
 from diffusion_policy.common.json_logger import read_json_log, JsonLogger
 import logging
 
+
 @numba.jit(nopython=True)
 def get_indexed_window_average(
         arr: np.ndarray, idxs: np.ndarray, window_size: int):
@@ -27,13 +28,13 @@ def get_indexed_window_average(
     return result
 
 
-def compute_metrics(log_df: pd.DataFrame, key: str, 
-        end_step: Optional[int]=None,
-        k_min_loss: int=10,
-        k_around_max: int=10,
-        max_k_window: int=10,
-        replace_slash: int=True,
-        ):
+def compute_metrics(log_df: pd.DataFrame, key: str,
+                    end_step: Optional[int] = None,
+                    k_min_loss: int = 10,
+                    k_around_max: int = 10,
+                    max_k_window: int = 10,
+                    replace_slash: int = True,
+                    ):
     if key not in log_df:
         return dict()
 
@@ -60,53 +61,52 @@ def compute_metrics(log_df: pd.DataFrame, key: str,
         log_key = key.replace('/', '_')
     # max
     max_value = np.max(key_data)
-    result['max/'+log_key] = max_value
+    result['max/' + log_key] = max_value
 
     # k_around_max
     max_idx = np.argmax(key_data)
     end = min(max_idx + k_around_max // 2, len(key_data))
     start = max(end - k_around_max, 0)
     k_around_max_value = np.mean(key_data[start:end])
-    result['k_around_max/'+log_key] = k_around_max_value
+    result['k_around_max/' + log_key] = k_around_max_value
 
     # max_k_window
     k_window_value = sn.uniform_filter1d(key_data, size=max_k_window, axis=0, mode='nearest')
     max_k_window_value = np.max(k_window_value)
-    result['max_k_window/'+log_key] = max_k_window_value
+    result['max_k_window/' + log_key] = max_k_window_value
 
     # min_train_loss
     min_idx = np.argmin(train_loss)
     min_train_loss_value = key_data[min_idx]
-    result['min_train_loss/'+log_key] = min_train_loss_value
+    result['min_train_loss/' + log_key] = min_train_loss_value
 
     # min_val_loss
     min_idx = np.argmin(val_loss)
     min_val_loss_value = key_data[min_idx]
-    result['min_val_loss/'+log_key] = min_val_loss_value
+    result['min_val_loss/' + log_key] = min_val_loss_value
 
     # k_min_train_loss
     min_loss_idxs = np.argsort(train_loss)[:k_min_loss]
     k_min_train_loss_value = np.mean(key_data[min_loss_idxs])
-    result['k_min_train_loss/'+log_key] = k_min_train_loss_value
+    result['k_min_train_loss/' + log_key] = k_min_train_loss_value
 
     # k_min_val_loss
     min_loss_idxs = np.argsort(val_loss)[:k_min_loss]
     k_min_val_loss_value = np.mean(key_data[min_loss_idxs])
-    result['k_min_val_loss/'+log_key] = k_min_val_loss_value
+    result['k_min_val_loss/' + log_key] = k_min_val_loss_value
 
     # last
-    result['last/'+log_key] = key_data[-1]
+    result['last/' + log_key] = key_data[-1]
 
     # global step for visualization
-    result['metric_global_step/'+log_key] = is_key_idxs[-1]
+    result['metric_global_step/' + log_key] = is_key_idxs[-1]
     return result
 
 
 def compute_metrics_agg(
-        log_dfs: List[pd.DataFrame], 
-        key: str, end_step:int, 
+        log_dfs: List[pd.DataFrame],
+        key: str, end_step: int,
         **kwargs):
-    
     # compute metrics
     results = collections.defaultdict(list)
     for log_df in log_dfs:
@@ -135,17 +135,17 @@ def compute_metrics_agg(
 @click.option('--id', default=None)
 @click.option('--group', default=None)
 def main(
-    input,
-    key,
-    interval,
-    replace_slash,
-    index_key,
-    use_wandb,
-    # wandb args
-    project,
-    name,
-    id,
-    group):
+        input,
+        key,
+        interval,
+        replace_slash,
+        index_key,
+        use_wandb,
+        # wandb args
+        project,
+        name,
+        id,
+        group):
     root_dir = pathlib.Path(input)
     assert root_dir.is_dir()
     metrics_dir = root_dir.joinpath('metrics')
@@ -159,7 +159,7 @@ def main(
             logging.StreamHandler()
         ]
     )
-    
+
     train_dirs = list(root_dir.glob('train_*'))
     log_files = [x.joinpath('logs.json.txt') for x in train_dirs]
     logging.info("Monitor waiting for log files!")
@@ -219,7 +219,7 @@ def main(
             last_log_idx = -1
             if last_log is not None:
                 last_log_idx = log_dfs[0].index[log_dfs[0][index_key] <= last_log[index_key]][-1]
-            
+
             start_idx = last_log_idx + 1
             # last idx where we have a data point from all logs
             end_idx = min(*[len(x) for x in log_dfs])
@@ -234,7 +234,7 @@ def main(
                 all_metrics['epoch'] = epoch
                 for k in key:
                     metrics = compute_metrics_agg(
-                        log_dfs=log_dfs, key=k, end_step=this_idx+1,
+                        log_dfs=log_dfs, key=k, end_step=this_idx + 1,
                         replace_slash=replace_slash)
                     all_metrics.update(metrics)
 
@@ -246,7 +246,7 @@ def main(
                         all_metrics[k] = int(v)
                     elif isinstance(v, numbers.Number):
                         all_metrics[k] = float(v)
-                
+
                 has_update = all_metrics != last_log
                 if has_update:
                     last_log = all_metrics
@@ -259,7 +259,7 @@ def main(
                         wandb_run.log(all_metrics, step=all_metrics[index_key])
 
                     logging.info(f"Metrics logged at step {all_metrics[index_key]}")
-            
+
             time.sleep(interval)
 
 

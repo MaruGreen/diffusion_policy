@@ -4,6 +4,7 @@ from diffusion_policy.common.replay_buffer import ReplayBuffer
 from diffusion_policy.env.pusht.pusht_keypoints_env import PushTKeypointsEnv
 import pygame
 
+
 @click.command()
 @click.option('-o', '--output', required=True)
 @click.option('-rs', '--render_size', default=96, type=int)
@@ -22,7 +23,7 @@ def main(output, render_size, control_hz):
     Press "R" to retry.
     Hold "Space" to pause.
     """
-    
+
     # create replay buffer in read-write mode
     replay_buffer = ReplayBuffer.create_from_path(output, mode='a')
 
@@ -31,7 +32,7 @@ def main(output, render_size, control_hz):
     env = PushTKeypointsEnv(render_size=render_size, render_action=False, **kp_kwargs)
     agent = env.teleop_agent()
     clock = pygame.time.Clock()
-    
+
     # episode-level while loop
     while True:
         episode = list()
@@ -41,12 +42,12 @@ def main(output, render_size, control_hz):
 
         # set seed for env
         env.seed(seed)
-        
+
         # reset env and get observations (including info and render for recording)
         obs = env.reset()
         info = env._get_info()
         img = env.render(mode='human')
-        
+
         # loop state
         retry = False
         pause = False
@@ -65,7 +66,7 @@ def main(output, render_size, control_hz):
                         pause = True
                     elif event.key == pygame.K_r:
                         # press "R" to retry
-                        retry=True
+                        retry = True
                     elif event.key == pygame.K_q:
                         # press "Q" to exit
                         exit(0)
@@ -78,7 +79,7 @@ def main(output, render_size, control_hz):
                 break
             if pause:
                 continue
-            
+
             # get action from mouse
             # None if mouse is not close to the agent
             act = agent.act(obs)
@@ -88,7 +89,7 @@ def main(output, render_size, control_hz):
                 state = np.concatenate([info['pos_agent'], info['block_pose']])
                 # discard unused information such as visibility mask and agent pos
                 # for compatibility
-                keypoint = obs.reshape(2,-1)[0].reshape(-1,2)[:9]
+                keypoint = obs.reshape(2, -1)[0].reshape(-1, 2)[:9]
                 data = {
                     'img': img,
                     'state': np.float32(state),
@@ -97,11 +98,11 @@ def main(output, render_size, control_hz):
                     'n_contacts': np.float32([info['n_contacts']])
                 }
                 episode.append(data)
-                
+
             # step env and render
             obs, reward, done, info = env.step(act)
             img = env.render(mode='human')
-            
+
             # regulate control frequency
             clock.tick(control_hz)
         if not retry:

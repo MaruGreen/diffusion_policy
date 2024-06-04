@@ -29,33 +29,36 @@ from diffusion_policy.real_world.keystroke_counter import (
     KeystrokeCounter, Key, KeyCode
 )
 
+
 @click.command()
 @click.option('--output', '-o', required=True, help="Directory to save demonstration dataset.")
 @click.option('--robot_ip', '-ri', required=True, help="UR5's IP address e.g. 192.168.0.204")
 @click.option('--vis_camera_idx', default=0, type=int, help="Which RealSense camera to visualize.")
-@click.option('--init_joints', '-j', is_flag=True, default=False, help="Whether to initialize robot joint configuration in the beginning.")
+@click.option('--init_joints', '-j', is_flag=True, default=False,
+              help="Whether to initialize robot joint configuration in the beginning.")
 @click.option('--frequency', '-f', default=10, type=float, help="Control frequency in Hz.")
-@click.option('--command_latency', '-cl', default=0.01, type=float, help="Latency between receiving SapceMouse command to executing on Robot in Sec.")
+@click.option('--command_latency', '-cl', default=0.01, type=float,
+              help="Latency between receiving SapceMouse command to executing on Robot in Sec.")
 def main(output, robot_ip, vis_camera_idx, init_joints, frequency, command_latency):
-    dt = 1/frequency
+    dt = 1 / frequency
     with SharedMemoryManager() as shm_manager:
         with KeystrokeCounter() as key_counter, \
-            Spacemouse(shm_manager=shm_manager) as sm, \
-            RealEnv(
-                output_dir=output, 
-                robot_ip=robot_ip, 
-                # recording resolution
-                obs_image_resolution=(1280,720),
-                frequency=frequency,
-                init_joints=init_joints,
-                enable_multi_cam_vis=True,
-                record_raw_video=True,
-                # number of threads per camera view for video recording (H.264)
-                thread_per_video=3,
-                # video recording quality, lower is better (but slower).
-                video_crf=21,
-                shm_manager=shm_manager
-            ) as env:
+                Spacemouse(shm_manager=shm_manager) as sm, \
+                RealEnv(
+                    output_dir=output,
+                    robot_ip=robot_ip,
+                    # recording resolution
+                    obs_image_resolution=(1280, 720),
+                    frequency=frequency,
+                    init_joints=init_joints,
+                    enable_multi_cam_vis=True,
+                    record_raw_video=True,
+                    # number of threads per camera view for video recording (H.264)
+                    thread_per_video=3,
+                    # video recording quality, lower is better (but slower).
+                    video_crf=21,
+                    shm_manager=shm_manager
+                ) as env:
             cv2.setNumThreads(1)
 
             # realsense exposure
@@ -108,7 +111,7 @@ def main(output, robot_ip, vis_camera_idx, init_joints, frequency, command_laten
                 stage = key_counter[Key.space]
 
                 # visualize
-                vis_img = obs[f'camera_{vis_camera_idx}'][-1,:,:,::-1].copy()
+                vis_img = obs[f'camera_{vis_camera_idx}'][-1, :, :, ::-1].copy()
                 episode_id = env.replay_buffer.n_episodes
                 text = f'Episode: {episode_id}, Stage: {stage}'
                 if is_recording:
@@ -116,11 +119,11 @@ def main(output, robot_ip, vis_camera_idx, init_joints, frequency, command_laten
                 cv2.putText(
                     vis_img,
                     text,
-                    (10,30),
+                    (10, 30),
                     fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                     fontScale=1,
                     thickness=2,
-                    color=(255,255,255)
+                    color=(255, 255, 255)
                 )
 
                 cv2.imshow('default', vis_img)
@@ -132,7 +135,7 @@ def main(output, robot_ip, vis_camera_idx, init_joints, frequency, command_laten
                 # print(sm_state)
                 dpos = sm_state[:3] * (env.max_pos_speed / frequency)
                 drot_xyz = sm_state[3:] * (env.max_rot_speed / frequency)
-                
+
                 if not sm.is_button_pressed(0):
                     # translation mode
                     drot_xyz[:] = 0
@@ -140,7 +143,7 @@ def main(output, robot_ip, vis_camera_idx, init_joints, frequency, command_laten
                     dpos[:] = 0
                 if not sm.is_button_pressed(1):
                     # 2D translation mode
-                    dpos[2] = 0    
+                    dpos[2] = 0
 
                 drot = st.Rotation.from_euler('xyz', drot_xyz)
                 target_pose[:3] += dpos
@@ -149,11 +152,12 @@ def main(output, robot_ip, vis_camera_idx, init_joints, frequency, command_laten
 
                 # execute teleop command
                 env.exec_actions(
-                    actions=[target_pose], 
-                    timestamps=[t_command_target-time.monotonic()+time.time()],
+                    actions=[target_pose],
+                    timestamps=[t_command_target - time.monotonic() + time.time()],
                     stages=[stage])
                 precise_wait(t_cycle_end)
                 iter_idx += 1
+
 
 # %%
 if __name__ == '__main__':

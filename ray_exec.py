@@ -7,6 +7,7 @@ import os
 import ray
 import click
 
+
 def worker_fn(command_args, data_src=None, unbuffer_python=False, use_shell=False):
     import os
     import subprocess
@@ -30,19 +31,19 @@ def worker_fn(command_args, data_src=None, unbuffer_python=False, use_shell=Fals
         # disable stdout/stderr buffering for subprocess (if python)
         # to remove latency between print statement and receiving printed result
         process_env['PYTHONUNBUFFERED'] = 'TRUE'
-    
+
     # ray worker masks out Ctrl-C signal (ie SIGINT)
     # here we unblock this signal for the child process
     def preexec_function():
         import signal
         signal.pthread_sigmask(signal.SIG_UNBLOCK, {signal.SIGINT})
-    
+
     if use_shell:
         command_args = ' '.join(command_args)
 
     # stdout passthrough to ray worker, which is then passed to ray driver
     process = subprocess.Popen(
-        args=command_args, 
+        args=command_args,
         env=process_env,
         preexec_fn=preexec_function,
         shell=use_shell)
@@ -73,10 +74,10 @@ def worker_fn(command_args, data_src=None, unbuffer_python=False, use_shell=Fals
 @click.option('--data_src', '-d', default='./data', type=str)
 @click.option('--unbuffer_python', '-u', is_flag=True, default=False)
 @click.argument('command_args', nargs=-1, type=str)
-def main(ray_address, 
-    num_cpus, num_gpus, max_retries, 
-    data_src, unbuffer_python, 
-    command_args):
+def main(ray_address,
+         num_cpus, num_gpus, max_retries,
+         data_src, unbuffer_python,
+         command_args):
     # expand path
     if data_src is not None:
         data_src = os.path.abspath(os.path.expanduser(data_src))
@@ -88,17 +89,17 @@ def main(ray_address,
         'excludes': ['.git']
     }
     ray.init(
-        address=ray_address, 
+        address=ray_address,
         runtime_env=runtime_env
     )
     # remote worker func
     worker_ray = ray.remote(worker_fn).options(
-        num_cpus=num_cpus, 
+        num_cpus=num_cpus,
         num_gpus=num_gpus,
         max_retries=max_retries,
         # resources=resources,
         retry_exceptions=True
-        )
+    )
     # run
     task_ref = worker_ray.remote(command_args, data_src, unbuffer_python)
 
@@ -115,7 +116,7 @@ def main(ray_address,
         # worker will be terminated
         ray.cancel(task_ref, force=True)
         raise e
-    
+
 
 if __name__ == '__main__':
     main()
