@@ -3,15 +3,13 @@ import time
 import enum
 import multiprocessing as mp
 from multiprocessing.managers import SharedMemoryManager
-import scipy.interpolate as si
-import scipy.spatial.transform as st
 import numpy as np
 from rtde_control import RTDEControlInterface
 from rtde_receive import RTDEReceiveInterface
-from diffusion_policy.shared_memory.shared_memory_queue import (
-    SharedMemoryQueue, Empty)
+from diffusion_policy.shared_memory.shared_memory_queue import SharedMemoryQueue, Empty
 from diffusion_policy.shared_memory.shared_memory_ring_buffer import SharedMemoryRingBuffer
 from diffusion_policy.common.pose_trajectory_interpolator import PoseTrajectoryInterpolator
+
 
 class Command(enum.Enum):
     STOP = 0
@@ -25,26 +23,25 @@ class RTDEInterpolationController(mp.Process):
     this controller need its separate process (due to python GIL)
     """
 
-
     def __init__(self,
-            shm_manager: SharedMemoryManager, 
-            robot_ip, 
-            frequency=125, 
-            lookahead_time=0.1, 
-            gain=300,
-            max_pos_speed=0.25, # 5% of max speed
-            max_rot_speed=0.16, # 5% of max speed
-            launch_timeout=3,
-            tcp_offset_pose=None,
-            payload_mass=None,
-            payload_cog=None,
-            joints_init=None,
-            joints_init_speed=1.05,
-            soft_real_time=False,
-            verbose=False,
-            receive_keys=None,
-            get_max_k=128,
-            ):
+                 shm_manager: SharedMemoryManager,
+                 robot_ip,
+                 frequency=125,
+                 lookahead_time=0.1,
+                 gain=300,
+                 max_pos_speed=0.25,  # 5% of max speed
+                 max_rot_speed=0.16,  # 5% of max speed
+                 launch_timeout=3,
+                 tcp_offset_pose=None,
+                 payload_mass=None,
+                 payload_cog=None,
+                 joints_init=None,
+                 joints_init_speed=1.05,
+                 soft_real_time=False,
+                 verbose=False,
+                 receive_keys=None,
+                 get_max_k=128,
+                 ):
         """
         frequency: CB2=125, UR3e=500
         lookahead_time: [0.03, 0.2]s smoothens the trajectory with this lookahead time
@@ -122,7 +119,7 @@ class RTDEInterpolationController(mp.Process):
         rtde_r = RTDEReceiveInterface(hostname=robot_ip)
         example = dict()
         for key in receive_keys:
-            example[key] = np.array(getattr(rtde_r, 'get'+key)())
+            example[key] = np.array(getattr(rtde_r, 'get' + key)())
         example['robot_receive_timestamp'] = time.time()
         ring_buffer = SharedMemoryRingBuffer.create_from_examples(
             shm_manager=shm_manager,
@@ -136,7 +133,7 @@ class RTDEInterpolationController(mp.Process):
         self.input_queue = input_queue
         self.ring_buffer = ring_buffer
         self.receive_keys = receive_keys
-    
+
     # ========= launch method ===========
     def start(self, wait=True):
         super().start()
@@ -156,10 +153,10 @@ class RTDEInterpolationController(mp.Process):
     def start_wait(self):
         self.ready_event.wait(self.launch_timeout)
         assert self.is_alive()
-    
+
     def stop_wait(self):
         self.join()
-    
+
     @property
     def is_ready(self):
         return self.ready_event.is_set()
@@ -168,17 +165,17 @@ class RTDEInterpolationController(mp.Process):
     def __enter__(self):
         self.start()
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
-        
+
     # ========= command methods ============
     def servoL(self, pose, duration=0.1):
         """
         duration: desired time to reach pose
         """
         assert self.is_alive()
-        assert(duration >= (1/self.frequency))
+        assert (duration >= (1 / self.frequency))
         pose = np.array(pose)
         assert pose.shape == (6,)
 
@@ -188,7 +185,7 @@ class RTDEInterpolationController(mp.Process):
             'duration': duration
         }
         self.input_queue.put(message)
-    
+
     def schedule_waypoint(self, pose, target_time):
         assert target_time > time.time()
         pose = np.array(pose)
@@ -206,11 +203,11 @@ class RTDEInterpolationController(mp.Process):
         if k is None:
             return self.ring_buffer.get(out=out)
         else:
-            return self.ring_buffer.get_last_k(k=k,out=out)
-    
+            return self.ring_buffer.get_last_k(k=k, out=out)
+
     def get_all_state(self):
         return self.ring_buffer.get_all()
-    
+
     # ========= main loop in process ============
     def run(self):
         # enable soft real-time
@@ -235,7 +232,7 @@ class RTDEInterpolationController(mp.Process):
                     assert rtde_c.setPayload(self.payload_mass, self.payload_cog)
                 else:
                     assert rtde_c.setPayload(self.payload_mass)
-            
+
             # init pose
             if self.joints_init is not None:
                 assert rtde_c.moveJ(self.joints_init, self.joints_init_speed, 1.4)
@@ -250,7 +247,7 @@ class RTDEInterpolationController(mp.Process):
                 times=[curr_t],
                 poses=[curr_pose]
             )
-            
+
             iter_idx = 0
             keep_running = True
             while keep_running:
@@ -265,16 +262,16 @@ class RTDEInterpolationController(mp.Process):
                 pose_command = pose_interp(t_now)
                 vel = 0.5
                 acc = 0.5
-                assert rtde_c.servoL(pose_command, 
-                    vel, acc, # dummy, not used by ur5
-                    dt, 
-                    self.lookahead_time, 
-                    self.gain)
-                
+                assert rtde_c.servoL(pose_command,
+                                     vel, acc,  # dummy, not used by ur5
+                                     dt,
+                                     self.lookahead_time,
+                                     self.gain)
+
                 # update robot state
                 state = dict()
                 for key in self.receive_keys:
-                    state[key] = np.array(getattr(rtde_r, 'get'+key)())
+                    state[key] = np.array(getattr(rtde_r, 'get' + key)())
                 state['robot_receive_timestamp'] = time.time()
                 self.ring_buffer.put(state)
 
@@ -344,7 +341,7 @@ class RTDEInterpolationController(mp.Process):
                 iter_idx += 1
 
                 if self.verbose:
-                    print(f"[RTDEPositionalController] Actual frequency {1/(time.perf_counter() - t_start)}")
+                    print(f"[RTDEPositionalController] Actual frequency {1 / (time.perf_counter() - t_start)}")
 
         finally:
             # manditory cleanup

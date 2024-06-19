@@ -83,7 +83,7 @@ def main(output, render_size, control_hz):
             # get action from mouse
             # None if mouse is not close to the agent
             act = agent.act(obs)
-            if not act is None:
+            if act is not None:
                 # teleop started
                 # state dim 2+3
                 state = np.concatenate([info['pos_agent'], info['block_pose']])

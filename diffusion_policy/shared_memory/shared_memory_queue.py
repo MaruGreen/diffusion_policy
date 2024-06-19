@@ -1,6 +1,6 @@
 from typing import Dict, List, Union
 import numbers
-from queue import (Empty, Full)
+from queue import Empty, Full
 from multiprocessing.managers import SharedMemoryManager
 import numpy as np
 from diffusion_policy.shared_memory.shared_memory_util import ArraySpec, SharedAtomicCounter
