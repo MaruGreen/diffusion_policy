@@ -17,9 +17,7 @@ import collections
 from pprint import pprint
 from omegaconf import OmegaConf
 from ray_exec import worker_fn
-from ray.util.placement_group import (
-    placement_group,
-)
+from ray.util.placement_group import placement_group
 from ray.util.scheduling_strategies import PlacementGroupSchedulingStrategy
 
 OmegaConf.register_new_resolver("eval", eval, replace=True)

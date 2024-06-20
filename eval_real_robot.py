@@ -22,7 +22,6 @@ Press "S" to stop evaluation and gain control back.
 
 # %%
 import time
-from multiprocessing.managers import SharedMemoryManager
 import click
 import cv2
 import numpy as np
@@ -31,8 +30,10 @@ import dill
 import hydra
 import pathlib
 import skvideo.io
-from omegaconf import OmegaConf
 import scipy.spatial.transform as st
+from omegaconf import OmegaConf
+from multiprocessing.managers import SharedMemoryManager
+
 from diffusion_policy.real_world.real_env import RealEnv
 from diffusion_policy.real_world.spacemouse_shared_memory import Spacemouse
 from diffusion_policy.common.precise_sleep import precise_wait

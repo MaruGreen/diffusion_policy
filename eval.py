@@ -4,11 +4,6 @@ python eval.py --checkpoint data/image/pusht/diffusion_policy_cnn/train_0/checkp
 """
 
 import sys
-
-# use line-buffering for both stdout and stderr
-sys.stdout = open(sys.stdout.fileno(), mode='w', buffering=1)
-sys.stderr = open(sys.stderr.fileno(), mode='w', buffering=1)
-
 import os
 import pathlib
 import click
@@ -17,8 +12,13 @@ import torch
 import dill
 import wandb
 import json
+
 from diffusion_policy.workspace.base_workspace import BaseWorkspace
 
+
+# use line-buffering for both stdout and stderr
+sys.stdout = open(sys.stdout.fileno(), mode='w', buffering=1)
+sys.stderr = open(sys.stderr.fileno(), mode='w', buffering=1)
 
 @click.command()
 @click.option('-c', '--checkpoint', required=True)
