@@ -25,7 +25,7 @@ sys.stderr = open(sys.stderr.fileno(), mode='w', buffering=1)
 @click.option('-d', '--device', default='cuda:0')
 def main(checkpoint, output_dir, device):
     if os.path.exists(output_dir):
-        click.confirm(f"Output path {output_dir} already exists! Overwrite?", abort=True)
+        click.confirm(f'Output path {output_dir} already exists! Overwrite?', abort=True)
     pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     # load checkpoint

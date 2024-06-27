@@ -29,14 +29,14 @@ from diffusion_policy.real_world.keystroke_counter import KeystrokeCounter, Key,
 
 
 @click.command()
-@click.option('--output', '-o', required=True, help="Directory to save demonstration dataset.")
-@click.option('--robot_ip', '-ri', required=True, help="UR5's IP address e.g. 192.168.0.204")
-@click.option('--vis_camera_idx', default=0, type=int, help="Which RealSense camera to visualize.")
+@click.option('--output', '-o', required=True, help='Directory to save demonstration dataset.')
+@click.option('--robot_ip', '-ri', required=True, help="UR5's IP address e.g. 192.168.x.x")
+@click.option('--vis_camera_idx', default=0, type=int, help='Which RealSense camera to visualize.')
 @click.option('--init_joints', '-j', is_flag=True, default=False,
-              help="Whether to initialize robot joint configuration in the beginning.")
-@click.option('--frequency', '-f', default=10, type=float, help="Control frequency in Hz.")
+              help='Whether to initialize robot joint configuration in the beginning.')
+@click.option('--frequency', '-f', default=10, type=float, help='Control frequency in Hz.')
 @click.option('--command_latency', '-cl', default=0.01, type=float,
-              help="Latency between receiving SapceMouse command to executing on Robot in Sec.")
+              help='Latency between receiving SapceMouse command to executing on Robot in Sec.')
 def main(output, robot_ip, vis_camera_idx, init_joints, frequency, command_latency):
     dt = 1 / frequency
     with SharedMemoryManager() as shm_manager:
@@ -148,7 +148,7 @@ def main(output, robot_ip, vis_camera_idx, init_joints, frequency, command_laten
                 target_pose[3:] = (drot * st.Rotation.from_rotvec(
                     target_pose[3:])).as_rotvec()
 
-                # execute teleop command
+                # execute telescope command
                 env.exec_actions(
                     actions=[target_pose],
                     timestamps=[t_command_target - time.monotonic() + time.time()],
