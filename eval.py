@@ -1,6 +1,6 @@
 """
 Usage:
-python eval.py --checkpoint data/image/pusht/diffusion_policy_cnn/train_0/checkpoints/latest.ckpt -o data/pusht_eval_output
+python eval.py --checkpoint data/xxx.ckpt -o data/pusht_eval_output
 """
 
 import sys

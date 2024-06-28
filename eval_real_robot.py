@@ -43,7 +43,7 @@ from diffusion_policy.workspace.base_workspace import BaseWorkspace
 from diffusion_policy.policy.base_image_policy import BaseImagePolicy
 from diffusion_policy.common.cv2_util import get_image_transform
 
-OmegaConf.register_new_resolver("eval", eval, replace=True)
+OmegaConf.register_new_resolver('eval', eval, replace=True)
 
 
 @click.command()
@@ -59,7 +59,7 @@ OmegaConf.register_new_resolver("eval", eval, replace=True)
 @click.option('--max_duration', '-md', default=60, help='Max duration for each epoch in seconds.')
 @click.option('--frequency', '-f', default=10, type=float, help="Control frequency in Hz.")
 @click.option('--command_latency', '-cl', default=0.01, type=float,
-              help="Latency between receiving SapceMouse command to executing on Robot in Sec.")
+              help="Latency between receiving Sapce-Mouse command to executing on Robot in Sec.")
 def main(input, output, robot_ip, match_dataset, match_episode,
          vis_camera_idx, init_joints,
          steps_per_inference, max_duration,
@@ -77,7 +77,7 @@ def main(input, output, robot_ip, match_dataset, match_episode,
                 frames = skvideo.io.vread(
                     str(match_video_path), num_frames=1)
                 episode_first_frame_map[episode_idx] = frames[0]
-    print(f"Loaded initial frame for {len(episode_first_frame_map)} episodes")
+    print(f'Loaded initial frame for {len(episode_first_frame_map)} episodes')
 
     # load checkpoint
     ckpt_path = input
@@ -130,16 +130,16 @@ def main(input, output, robot_ip, match_dataset, match_episode,
         action_offset = 1
         delta_action = cfg.task.dataset.get('delta_action', False)
     else:
-        raise RuntimeError("Unsupported policy type: ", cfg.name)
+        raise RuntimeError('Unsupported policy type: ', cfg.name)
 
     # setup experiment
     dt = 1 / frequency
 
     obs_res = get_real_obs_resolution(cfg.task.shape_meta)
     n_obs_steps = cfg.n_obs_steps
-    print("n_obs_steps: ", n_obs_steps)
-    print("steps_per_inference:", steps_per_inference)
-    print("action_offset:", action_offset)
+    print('n_obs_steps: ', n_obs_steps)
+    print('steps_per_inference: ', steps_per_inference)
+    print('action_offset: ', action_offset)
 
     with SharedMemoryManager() as shm_manager:
         with Spacemouse(shm_manager=shm_manager) as sm, RealEnv(
@@ -165,10 +165,10 @@ def main(input, output, robot_ip, match_dataset, match_episode,
             # realsense white balance
             env.realsense.set_white_balance(white_balance=5900)
 
-            print("Waiting for realsense")
+            print('Waiting for realsense')
             time.sleep(1.0)
 
-            print("Warming up policy inference")
+            print('Warming up policy inference')
             obs = env.get_obs()
             with torch.no_grad():
                 policy.reset()
@@ -184,7 +184,7 @@ def main(input, output, robot_ip, match_dataset, match_episode,
             print('Ready!')
             while True:
                 # ========= human control loop ==========
-                print("Human in control!")
+                print('Human in control!')
                 state = env.get_robot_state()
                 target_pose = state['TargetTCPPose']
                 t_start = time.monotonic()
@@ -346,7 +346,7 @@ def main(input, output, robot_ip, match_dataset, match_episode,
                             actions=this_target_poses,
                             timestamps=action_timestamps
                         )
-                        print(f"Submitted {len(this_target_poses)} steps of actions.")
+                        print(f'Submitted {len(this_target_poses)} steps of actions.')
 
                         # visualize
                         episode_id = env.replay_buffer.n_episodes
@@ -407,11 +407,11 @@ def main(input, output, robot_ip, match_dataset, match_episode,
                         iter_idx += steps_per_inference
 
                 except KeyboardInterrupt:
-                    print("Interrupted!")
+                    print('Interrupted!')
                     # stop robot.
                     env.end_episode()
 
-                print("Stopped.")
+                print('Stopped.')
 
 
 # %%
