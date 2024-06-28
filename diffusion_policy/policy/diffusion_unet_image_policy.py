@@ -1,6 +1,5 @@
 from typing import Dict
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange, reduce
 from diffusers.schedulers.scheduling_ddpm import DDPMScheduler

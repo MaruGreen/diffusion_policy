@@ -6,7 +6,7 @@ import time
 
 
 class Spacemouse(Thread):
-    def __init__(self, max_value=500, deadzone=(0,0,0,0,0,0), dtype=np.float32):
+    def __init__(self, max_value=500, deadzone=(0, 0, 0, 0, 0, 0), dtype=np.float32):
         """
         Continuously listen to 3D connection space naviagtor events
         and update the latest state.
@@ -33,22 +33,22 @@ class Spacemouse(Thread):
         self.max_value = max_value
         self.dtype = dtype
         self.deadzone = deadzone
-        self.motion_event = SpnavMotionEvent([0,0,0], [0,0,0], 0)
+        self.motion_event = SpnavMotionEvent([0, 0, 0], [0, 0, 0], 0)
         self.button_state = defaultdict(lambda: False)
         self.tx_zup_spnav = np.array([
-            [0,0,-1],
-            [1,0,0],
-            [0,1,0]
+            [0, 0, -1],
+            [1, 0, 0],
+            [0, 1, 0]
         ], dtype=dtype)
 
     def get_motion_state(self):
         me = self.motion_event
-        state = np.array(me.translation + me.rotation, 
-            dtype=self.dtype) / self.max_value
+        state = np.array(me.translation + me.rotation,
+                         dtype=self.dtype) / self.max_value
         is_dead = (-self.deadzone < state) & (state < self.deadzone)
         state[is_dead] = 0
         return state
-    
+
     def get_motion_state_transformed(self):
         """
         Return in right-handed coordinate
@@ -77,7 +77,7 @@ class Spacemouse(Thread):
     def __enter__(self):
         self.start()
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
 
@@ -91,7 +91,7 @@ class Spacemouse(Thread):
                 elif isinstance(event, SpnavButtonEvent):
                     self.button_state[event.bnum] = event.press
                 else:
-                    time.sleep(1/200)
+                    time.sleep(1 / 200)
         finally:
             spnav_close()
 
@@ -102,7 +102,8 @@ def test():
             # print(sm.get_motion_state())
             print(sm.get_motion_state_transformed())
             print(sm.is_button_pressed(0))
-            time.sleep(1/100)
+            time.sleep(1 / 100)
+
 
 if __name__ == '__main__':
     test()

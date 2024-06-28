@@ -1,13 +1,10 @@
 import os
 import random
 from collections import OrderedDict
-from typing import List, Optional
-
 import einops
 import numpy as np
 import torch
 import torch.nn as nn
-
 from torch.utils.data import random_split
 import wandb
 

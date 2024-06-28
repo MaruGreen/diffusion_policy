@@ -1,24 +1,25 @@
-from typing import Dict, Tuple
+from typing import Dict
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from diffusion_policy.model.common.normalizer import LinearNormalizer
 from diffusion_policy.policy.base_lowdim_policy import BaseLowdimPolicy
 
+
 class IbcDfoLowdimPolicy(BaseLowdimPolicy):
     def __init__(self,
-            horizon, 
-            obs_dim, 
-            action_dim, 
-            n_action_steps, 
-            n_obs_steps,
-            dropout=0.1,
-            train_n_neg=128,
-            pred_n_iter=5,
-            pred_n_samples=16384,
-            kevin_inference=False,
-            andy_train=False
-        ):
+                 horizon,
+                 obs_dim,
+                 action_dim,
+                 n_action_steps,
+                 n_obs_steps,
+                 dropout=0.1,
+                 train_n_neg=128,
+                 pred_n_iter=5,
+                 pred_n_samples=16384,
+                 kevin_inference=False,
+                 andy_train=False
+                 ):
         super().__init__()
 
         in_action_channels = action_dim * n_action_steps
@@ -49,18 +50,18 @@ class IbcDfoLowdimPolicy(BaseLowdimPolicy):
         self.horizon = horizon
         self.kevin_inference = kevin_inference
         self.andy_train = andy_train
-    
+
     def forward(self, obs, action):
         B, N, Ta, Da = action.shape
         B, To, Do = obs.shape
-        s = obs.reshape(B,1,-1).expand(-1,N,-1)
-        x = torch.cat([s, action.reshape(B,N,-1)], dim=-1).reshape(B*N,-1)
+        s = obs.reshape(B, 1, -1).expand(-1, N, -1)
+        x = torch.cat([s, action.reshape(B, N, -1)], dim=-1).reshape(B * N, -1)
         x = self.drop0(torch.relu(self.dense0(x)))
         x = self.drop1(torch.relu(self.dense1(x)))
         x = self.drop2(torch.relu(self.dense2(x)))
         x = self.drop3(torch.relu(self.dense3(x)))
         x = self.dense4(x)
-        x = x.reshape(B,N)
+        x = x.reshape(B, N)
         return x
 
     # ========= inference  ============
@@ -71,7 +72,7 @@ class IbcDfoLowdimPolicy(BaseLowdimPolicy):
         """
 
         assert 'obs' in obs_dict
-        assert 'past_action' not in obs_dict # not implemented yet
+        assert 'past_action' not in obs_dict  # not implemented yet
         nobs = self.normalizer['obs'].normalize(obs_dict['obs'])
         B, _, Do = nobs.shape
         To = self.n_obs_steps
@@ -81,7 +82,7 @@ class IbcDfoLowdimPolicy(BaseLowdimPolicy):
         Ta = self.n_action_steps
 
         # only take necessary obs
-        this_obs = nobs[:,:To]
+        this_obs = nobs[:, :To]
         naction_stats = self.get_naction_stats()
 
         # first sample
@@ -120,7 +121,7 @@ class IbcDfoLowdimPolicy(BaseLowdimPolicy):
             resample_std = torch.tensor(3e-2, device=self.device)
             for i in range(self.pred_n_iter):
                 # Forward pass.
-                logits = self.forward(this_obs, samples) # (B, N)
+                logits = self.forward(this_obs, samples)  # (B, N)
                 prob = torch.softmax(logits, dim=-1)
 
                 if i < (self.pred_n_iter - 1):
@@ -157,16 +158,16 @@ class IbcDfoLowdimPolicy(BaseLowdimPolicy):
         T = self.horizon
         B = naction.shape[0]
 
-        this_obs = nobs[:,:To]
+        this_obs = nobs[:, :To]
         start = To - 1
         end = start + Ta
-        this_action = naction[:,start:end]
+        this_action = naction[:, start:end]
 
         # Small additive noise to true positives.
         this_action += torch.normal(mean=0, std=1e-4,
-            size=this_action.shape,
-            dtype=this_action.dtype,
-            device=this_action.device)
+                                    size=this_action.shape,
+                                    dtype=this_action.dtype,
+                                    device=this_action.device)
 
         # Sample negatives: (B, train_n_neg, Ta, Da)
         naction_stats = self.get_naction_stats()
@@ -182,20 +183,19 @@ class IbcDfoLowdimPolicy(BaseLowdimPolicy):
 
         if self.andy_train:
             # Get onehot labels
-            labels = torch.zeros(action_samples.shape[:2], 
-                dtype=this_action.dtype, device=this_action.device)
-            labels[:,0] = 1
+            labels = torch.zeros(action_samples.shape[:2],
+                                 dtype=this_action.dtype, device=this_action.device)
+            labels[:, 0] = 1
             logits = self.forward(this_obs, action_samples)
             # (B, N)
             logits = torch.log_softmax(logits, dim=-1)
             loss = -torch.mean(torch.sum(logits * labels, axis=-1))
         else:
-            labels = torch.zeros((B,),dtype=torch.int64, device=this_action.device)
+            labels = torch.zeros((B,), dtype=torch.int64, device=this_action.device)
             # training
             logits = self.forward(this_obs, action_samples)
             loss = F.cross_entropy(logits, labels)
         return loss
-
 
     def get_naction_stats(self):
         Da = self.action_dim

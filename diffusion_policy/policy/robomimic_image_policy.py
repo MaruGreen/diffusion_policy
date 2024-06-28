@@ -1,23 +1,24 @@
 from typing import Dict
 import torch
+from robomimic.algo import algo_factory
+from robomimic.algo.algo import PolicyAlgo
+import robomimic.utils.obs_utils as ObsUtils
+
+from diffusion_policy.common.robomimic_config_util import get_robomimic_config
 from diffusion_policy.model.common.normalizer import LinearNormalizer
 from diffusion_policy.policy.base_image_policy import BaseImagePolicy
 from diffusion_policy.common.pytorch_util import dict_apply
 
-from robomimic.algo import algo_factory
-from robomimic.algo.algo import PolicyAlgo
-import robomimic.utils.obs_utils as ObsUtils
-from diffusion_policy.common.robomimic_config_util import get_robomimic_config
 
 class RobomimicImagePolicy(BaseImagePolicy):
-    def __init__(self, 
-            shape_meta: dict,
-            algo_name='bc_rnn',
-            obs_type='image',
-            task_name='square',
-            dataset_type='ph',
-            crop_shape=(76,76)
-        ):
+    def __init__(self,
+                 shape_meta: dict,
+                 algo_name='bc_rnn',
+                 obs_type='image',
+                 task_name='square',
+                 dataset_type='ph',
+                 crop_shape=(76, 76)
+                 ):
         super().__init__()
 
         # parse shape_meta
@@ -51,7 +52,6 @@ class RobomimicImagePolicy(BaseImagePolicy):
             task_name=task_name,
             dataset_type=dataset_type)
 
-        
         with config.unlocked():
             # set config with shape_meta
             config.observation.modalities.obs = obs_config
@@ -73,33 +73,33 @@ class RobomimicImagePolicy(BaseImagePolicy):
 
         # load model
         model: PolicyAlgo = algo_factory(
-                algo_name=config.algo_name,
-                config=config,
-                obs_key_shapes=obs_key_shapes,
-                ac_dim=action_dim,
-                device='cpu',
-            )
+            algo_name=config.algo_name,
+            config=config,
+            obs_key_shapes=obs_key_shapes,
+            ac_dim=action_dim,
+            device='cpu',
+        )
 
         self.model = model
         self.nets = model.nets
         self.normalizer = LinearNormalizer()
         self.config = config
 
-    def to(self,*args,**kwargs):
+    def to(self, *args, **kwargs):
         device, dtype, non_blocking, convert_to_format = torch._C._nn._parse_to(*args, **kwargs)
         if device is not None:
             self.model.device = device
-        super().to(*args,**kwargs)
-    
+        super().to(*args, **kwargs)
+
     # =========== inference =============
     def predict_action(self, obs_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         nobs_dict = self.normalizer(obs_dict)
-        robomimic_obs_dict = dict_apply(nobs_dict, lambda x: x[:,0,...])
+        robomimic_obs_dict = dict_apply(nobs_dict, lambda x: x[:, 0, ...])
         naction = self.model.get_action(robomimic_obs_dict)
         action = self.normalizer['action'].unnormalize(naction)
         # (B, Da)
         result = {
-            'action': action[:,None,:] # (B, 1, Da)
+            'action': action[:, None, :]  # (B, 1, Da)
         }
         return result
 
@@ -123,7 +123,7 @@ class RobomimicImagePolicy(BaseImagePolicy):
             batch=input_batch, epoch=epoch, validate=validate)
         # keys: losses, predictions
         return info
-    
+
     def on_epoch_end(self, epoch):
         self.model.on_epoch_end(epoch)
 
@@ -139,4 +139,3 @@ def test():
     shape_meta = cfg.shape_meta
 
     policy = RobomimicImagePolicy(shape_meta=shape_meta)
-

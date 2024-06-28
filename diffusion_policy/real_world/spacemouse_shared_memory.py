@@ -4,16 +4,17 @@ import time
 from spnav import spnav_open, spnav_poll_event, spnav_close, SpnavMotionEvent, SpnavButtonEvent
 from diffusion_policy.shared_memory.shared_memory_ring_buffer import SharedMemoryRingBuffer
 
+
 class Spacemouse(mp.Process):
-    def __init__(self, 
-            shm_manager, 
-            get_max_k=30, 
-            frequency=200,
-            max_value=500, 
-            deadzone=(0,0,0,0,0,0), 
-            dtype=np.float32,
-            n_buttons=2,
-            ):
+    def __init__(self,
+                 shm_manager,
+                 get_max_k=30,
+                 frequency=200,
+                 max_value=500,
+                 deadzone=(0, 0, 0, 0, 0, 0),
+                 dtype=np.float32,
+                 n_buttons=2,
+                 ):
         """
         Continuously listen to 3D connection space naviagtor events
         and update the latest state.
@@ -45,9 +46,9 @@ class Spacemouse(mp.Process):
         # self.motion_event = SpnavMotionEvent([0,0,0], [0,0,0], 0)
         # self.button_state = defaultdict(lambda: False)
         self.tx_zup_spnav = np.array([
-            [0,0,-1],
-            [1,0,0],
-            [0,1,0]
+            [0, 0, -1],
+            [1, 0, 0],
+            [0, 1, 0]
         ], dtype=dtype)
 
         example = {
@@ -58,7 +59,7 @@ class Spacemouse(mp.Process):
             'receive_timestamp': time.time()
         }
         ring_buffer = SharedMemoryRingBuffer.create_from_examples(
-            shm_manager=shm_manager, 
+            shm_manager=shm_manager,
             examples=example,
             get_max_k=get_max_k,
             get_time_budget=0.2,
@@ -74,12 +75,12 @@ class Spacemouse(mp.Process):
 
     def get_motion_state(self):
         state = self.ring_buffer.get()
-        state = np.array(state['motion_event'][:6], 
-            dtype=self.dtype) / self.max_value
+        state = np.array(state['motion_event'][:6],
+                         dtype=self.dtype) / self.max_value
         is_dead = (-self.deadzone < state) & (state < self.deadzone)
         state[is_dead] = 0
         return state
-    
+
     def get_motion_state_transformed(self):
         """
         Return in right-handed coordinate
@@ -101,26 +102,26 @@ class Spacemouse(mp.Process):
     def get_button_state(self):
         state = self.ring_buffer.get()
         return state['button_state']
-    
+
     def is_button_pressed(self, button_id):
         return self.get_button_state()[button_id]
-    
-    #========== start stop API ===========
+
+    # ========== start stop API ===========
 
     def start(self, wait=True):
         super().start()
         if wait:
             self.ready_event.wait()
-    
+
     def stop(self, wait=True):
         self.stop_event.set()
         if wait:
             self.join()
-    
+
     def __enter__(self):
         self.start()
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
 
@@ -155,6 +156,6 @@ class Spacemouse(mp.Process):
                         'button_state': button_state,
                         'receive_timestamp': receive_timestamp
                     })
-                    time.sleep(1/self.frequency)
+                    time.sleep(1 / self.frequency)
         finally:
             spnav_close()

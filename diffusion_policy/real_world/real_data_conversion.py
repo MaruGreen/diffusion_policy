@@ -8,29 +8,28 @@ import numcodecs
 import multiprocessing
 import concurrent.futures
 from tqdm import tqdm
-from diffusion_policy.common.replay_buffer import ReplayBuffer, get_optimal_chunks
+
+from diffusion_policy.common.replay_buffer import ReplayBuffer
 from diffusion_policy.common.cv2_util import get_image_transform
 from diffusion_policy.real_world.video_recorder import read_video
-from diffusion_policy.codecs.imagecodecs_numcodecs import (
-    register_codecs,
-    Jpeg2k
-)
+from diffusion_policy.codecs.imagecodecs_numcodecs import register_codecs, Jpeg2k
+
 register_codecs()
 
 
 def real_data_to_replay_buffer(
-        dataset_path: str, 
-        out_store: Optional[zarr.ABSStore]=None, 
-        out_resolutions: Union[None, tuple, Dict[str,tuple]]=None, # (width, height)
-        lowdim_keys: Optional[Sequence[str]]=None,
-        image_keys: Optional[Sequence[str]]=None,
-        lowdim_compressor: Optional[numcodecs.abc.Codec]=None,
-        image_compressor: Optional[numcodecs.abc.Codec]=None,
-        n_decoding_threads: int=multiprocessing.cpu_count(),
-        n_encoding_threads: int=multiprocessing.cpu_count(),
-        max_inflight_tasks: int=multiprocessing.cpu_count()*5,
-        verify_read: bool=True
-        ) -> ReplayBuffer:
+        dataset_path: str,
+        out_store: Optional[zarr.ABSStore] = None,
+        out_resolutions: Union[None, tuple, Dict[str, tuple]] = None,  # (width, height)
+        lowdim_keys: Optional[Sequence[str]] = None,
+        image_keys: Optional[Sequence[str]] = None,
+        lowdim_compressor: Optional[numcodecs.abc.Codec] = None,
+        image_compressor: Optional[numcodecs.abc.Codec] = None,
+        n_decoding_threads: int = multiprocessing.cpu_count(),
+        n_encoding_threads: int = multiprocessing.cpu_count(),
+        max_inflight_tasks: int = multiprocessing.cpu_count() * 5,
+        verify_read: bool = True
+) -> ReplayBuffer:
     """
     It is recommended to use before calling this function
     to avoid CPU oversubscription
@@ -60,7 +59,7 @@ def real_data_to_replay_buffer(
     in_video_dir = input.joinpath('videos')
     assert in_zarr_path.is_dir()
     assert in_video_dir.is_dir()
-    
+
     in_replay_buffer = ReplayBuffer.create_from_path(str(in_zarr_path.absolute()), mode='r')
 
     # save lowdim data to single chunk
@@ -77,8 +76,8 @@ def real_data_to_replay_buffer(
         keys=lowdim_keys,
         chunks=chunks_map,
         compressors=compressor_map
-        )
-    
+    )
+
     # worker function
     def put_img(zarr_arr, zarr_idx, img):
         try:
@@ -90,9 +89,8 @@ def real_data_to_replay_buffer(
         except Exception as e:
             return False
 
-    
     n_cameras = 0
-    camera_idxs = set() 
+    camera_idxs = set()
     if image_keys is not None:
         n_cameras = len(image_keys)
         camera_idxs = set(int(x.split('_')[-1]) for x in image_keys)
@@ -102,14 +100,14 @@ def real_data_to_replay_buffer(
         episode_video_paths = sorted(episode_video_dir.glob('*.mp4'), key=lambda x: int(x.stem))
         camera_idxs = set(int(x.stem) for x in episode_video_paths)
         n_cameras = len(episode_video_paths)
-    
+
     n_steps = in_replay_buffer.n_steps
     episode_starts = in_replay_buffer.episode_ends[:] - in_replay_buffer.episode_lengths[:]
     episode_lengths = in_replay_buffer.episode_lengths
     timestamps = in_replay_buffer['timestamp'][:]
     dt = timestamps[1] - timestamps[0]
 
-    with tqdm(total=n_steps*n_cameras, desc="Loading image data", mininterval=1.0) as pbar:
+    with tqdm(total=n_steps * n_cameras, desc="Loading image data", mininterval=1.0) as pbar:
         # one chunk per thread, therefore no synchronization needed
         with concurrent.futures.ThreadPoolExecutor(max_workers=n_encoding_threads) as executor:
             futures = set()
@@ -155,8 +153,8 @@ def real_data_to_replay_buffer(
                         ow, oh = out_img_res
                         _ = out_replay_buffer.data.require_dataset(
                             name=arr_name,
-                            shape=(n_steps,oh,ow,3),
-                            chunks=(1,oh,ow,3),
+                            shape=(n_steps, oh, ow, 3),
+                            chunks=(1, oh, ow, 3),
                             compressor=image_compressor,
                             dtype=np.uint8
                         )
@@ -170,16 +168,16 @@ def real_data_to_replay_buffer(
                             img_transform=image_tf,
                             thread_type='FRAME',
                             thread_count=n_decoding_threads
-                        )):
+                    )):
                         if len(futures) >= max_inflight_tasks:
                             # limit number of inflight tasks
-                            completed, futures = concurrent.futures.wait(futures, 
-                                return_when=concurrent.futures.FIRST_COMPLETED)
+                            completed, futures = concurrent.futures.wait(futures,
+                                                                         return_when=concurrent.futures.FIRST_COMPLETED)
                             for f in completed:
                                 if not f.result():
                                     raise RuntimeError('Failed to encode image!')
                             pbar.update(len(completed))
-                        
+
                         global_idx = episode_start + step_idx
                         futures.add(executor.submit(put_img, arr, global_idx, frame))
 
@@ -191,4 +189,3 @@ def real_data_to_replay_buffer(
                     raise RuntimeError('Failed to encode image!')
             pbar.update(len(completed))
     return out_replay_buffer
-

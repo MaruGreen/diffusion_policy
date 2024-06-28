@@ -3,21 +3,23 @@ import torch
 import numpy as np
 import copy
 import pathlib
+
 from diffusion_policy.common.pytorch_util import dict_apply
 from diffusion_policy.common.replay_buffer import ReplayBuffer
 from diffusion_policy.common.sampler import SequenceSampler, get_val_mask
 from diffusion_policy.model.common.normalizer import LinearNormalizer, SingleFieldLinearNormalizer
 from diffusion_policy.dataset.base_dataset import BaseLowdimDataset
 
+
 class KitchenLowdimDataset(BaseLowdimDataset):
     def __init__(self,
-            dataset_dir,
-            horizon=1,
-            pad_before=0,
-            pad_after=0,
-            seed=42,
-            val_ratio=0.0
-        ):
+                 dataset_dir,
+                 horizon=1,
+                 pad_before=0,
+                 pad_after=0,
+                 seed=42,
+                 val_ratio=0.0
+                 ):
         super().__init__()
 
         data_directory = pathlib.Path(dataset_dir)
@@ -28,23 +30,23 @@ class KitchenLowdimDataset(BaseLowdimDataset):
         self.replay_buffer = ReplayBuffer.create_empty_numpy()
         for i in range(len(masks)):
             eps_len = int(masks[i].sum())
-            obs = observations[i,:eps_len].astype(np.float32)
-            action = actions[i,:eps_len].astype(np.float32)
-            data = {                              
+            obs = observations[i, :eps_len].astype(np.float32)
+            action = actions[i, :eps_len].astype(np.float32)
+            data = {
                 'obs': obs,
                 'action': action
             }
             self.replay_buffer.add_episode(data)
-        
+
         val_mask = get_val_mask(
-            n_episodes=self.replay_buffer.n_episodes, 
+            n_episodes=self.replay_buffer.n_episodes,
             val_ratio=val_ratio,
             seed=seed)
         train_mask = ~val_mask
         self.sampler = SequenceSampler(
-            replay_buffer=self.replay_buffer, 
+            replay_buffer=self.replay_buffer,
             sequence_length=horizon,
-            pad_before=pad_before, 
+            pad_before=pad_before,
             pad_after=pad_after,
             episode_mask=train_mask)
 
@@ -56,12 +58,12 @@ class KitchenLowdimDataset(BaseLowdimDataset):
     def get_validation_dataset(self):
         val_set = copy.copy(self)
         val_set.sampler = SequenceSampler(
-            replay_buffer=self.replay_buffer, 
+            replay_buffer=self.replay_buffer,
             sequence_length=self.horizon,
-            pad_before=self.pad_before, 
+            pad_before=self.pad_before,
             pad_after=self.pad_after,
             episode_mask=~self.train_mask
-            )
+        )
         val_set.train_mask = ~self.train_mask
         return val_set
 
