@@ -1,46 +1,13 @@
 # Diffusion Policy
 
-## 🛝 Try it out!
-Our self-contained Google Colab notebooks is the easiest way to play with Diffusion Policy. We provide separate notebooks for  [state-based environment](https://colab.research.google.com/drive/1gxdkgRVfM55zihY9TFLja97cSVZOZq2B?usp=sharing) and [vision-based environment](https://colab.research.google.com/drive/18GIHeOQ5DyjMN8iIRZL2EKZ0745NLIpg?usp=sharing).
-
-## 🧾 Checkout our experiment logs!
-For each experiment used to generate Table I,II and IV in the [paper](https://diffusion-policy.cs.columbia.edu/#paper), we provide:
+## Checkout experiment logs!
+For each experiment used to generate Table I,II and IV in the paper they provide:
 1. A `config.yaml` that contains all parameters needed to reproduce the experiment.
 2. Detailed training/eval `logs.json.txt` for every training step.
 3. Checkpoints for the best `epoch=*-test_mean_score=*.ckpt` and last `latest.ckpt` epoch of each run.
 
 Experiment logs are hosted on our website as nested directories in format:
 `https://diffusion-policy.cs.columbia.edu/data/experiments/<image|low_dim>/<task>/<method>/`
-
-Within each experiment directory you may find:
-```
-.
-├── config.yaml
-├── metrics
-│   └── logs.json.txt
-├── train_0
-│   ├── checkpoints
-│   │   ├── epoch=0300-test_mean_score=1.000.ckpt
-│   │   └── latest.ckpt
-│   └── logs.json.txt
-├── train_1
-│   ├── checkpoints
-│   │   ├── epoch=0250-test_mean_score=1.000.ckpt
-│   │   └── latest.ckpt
-│   └── logs.json.txt
-└── train_2
-    ├── checkpoints
-    │   ├── epoch=0250-test_mean_score=1.000.ckpt
-    │   └── latest.ckpt
-    └── logs.json.txt
-```
-The `metrics/logs.json.txt` file aggregates evaluation metrics from all 3 training runs every 50 epochs using `multirun_metrics.py`. The numbers reported in the paper correspond to `max` and `k_min_train_loss` aggregation keys.
-
-To download all files in a subdirectory, use:
-
-```console
-$ wget --recursive --no-parent --no-host-directories --relative --reject="index.html*" https://diffusion-policy.cs.columbia.edu/data/experiments/low_dim/square_ph/diffusion_policy_cnn/
-```
 
 ## 🛠️ Installation
 ### 🖥️ Simulation
@@ -58,8 +25,6 @@ but you can use conda as well:
 ```console
 $ conda env create -f conda_environment.yaml
 ```
-
-The `conda_environment_macos.yaml` file is only for development on MacOS and does not have full support for benchmarks.
 
 ### 🦾 Real Robot
 Hardware (for Push-T):
