@@ -40,12 +40,9 @@ __all__ = [
     "positive_y_is_up",
 ]
 
-from typing import List, Sequence, Tuple
-
+from typing import Sequence, Tuple
 import pygame
-
 import numpy as np
-
 import pymunk
 from pymunk.space_debug_draw_options import SpaceDebugColor
 from pymunk.vec2d import Vec2d
@@ -127,17 +124,17 @@ class DrawOptions(pymunk.SpaceDebugDrawOptions):
         super(DrawOptions, self).__init__()
 
     def draw_circle(
-        self,
-        pos: Vec2d,
-        angle: float,
-        radius: float,
-        outline_color: SpaceDebugColor,
-        fill_color: SpaceDebugColor,
+            self,
+            pos: Vec2d,
+            angle: float,
+            radius: float,
+            outline_color: SpaceDebugColor,
+            fill_color: SpaceDebugColor,
     ) -> None:
         p = to_pygame(pos, self.surface)
 
         pygame.draw.circle(self.surface, fill_color.as_int(), p, round(radius), 0)
-        pygame.draw.circle(self.surface, light_color(fill_color).as_int(), p, round(radius-4), 0)
+        pygame.draw.circle(self.surface, light_color(fill_color).as_int(), p, round(radius - 4), 0)
 
         circle_edge = pos + Vec2d(radius, 0).rotated(angle)
         p2 = to_pygame(circle_edge, self.surface)
@@ -151,12 +148,12 @@ class DrawOptions(pymunk.SpaceDebugDrawOptions):
         pygame.draw.aalines(self.surface, color.as_int(), False, [p1, p2])
 
     def draw_fat_segment(
-        self,
-        a: Tuple[float, float],
-        b: Tuple[float, float],
-        radius: float,
-        outline_color: SpaceDebugColor,
-        fill_color: SpaceDebugColor,
+            self,
+            a: Tuple[float, float],
+            b: Tuple[float, float],
+            radius: float,
+            outline_color: SpaceDebugColor,
+            fill_color: SpaceDebugColor,
     ) -> None:
         p1 = to_pygame(a, self.surface)
         p2 = to_pygame(b, self.surface)
@@ -191,11 +188,11 @@ class DrawOptions(pymunk.SpaceDebugDrawOptions):
             )
 
     def draw_polygon(
-        self,
-        verts: Sequence[Tuple[float, float]],
-        radius: float,
-        outline_color: SpaceDebugColor,
-        fill_color: SpaceDebugColor,
+            self,
+            verts: Sequence[Tuple[float, float]],
+            radius: float,
+            outline_color: SpaceDebugColor,
+            fill_color: SpaceDebugColor,
     ) -> None:
         ps = [to_pygame(v, self.surface) for v in verts]
         ps += [ps[0]]
@@ -210,7 +207,7 @@ class DrawOptions(pymunk.SpaceDebugDrawOptions):
                 self.draw_fat_segment(a, b, radius, fill_color, fill_color)
 
     def draw_dot(
-        self, size: float, pos: Tuple[float, float], color: SpaceDebugColor
+            self, size: float, pos: Tuple[float, float], color: SpaceDebugColor
     ) -> None:
         p = to_pygame(pos, self.surface)
         pygame.draw.circle(self.surface, color.as_int(), p, round(size), 0)

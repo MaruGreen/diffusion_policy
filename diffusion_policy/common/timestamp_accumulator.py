@@ -4,16 +4,16 @@ import numpy as np
 
 
 def get_accumulate_timestamp_idxs(
-    timestamps: List[float],  
-    start_time: float, 
-    dt: float, 
-    eps:float=1e-5,
-    next_global_idx: Optional[int]=0,
-    allow_negative=False
-    ) -> Tuple[List[int], List[int], int]:
+        timestamps: List[float],
+        start_time: float,
+        dt: float,
+        eps: float = 1e-5,
+        next_global_idx: Optional[int] = 0,
+        allow_negative=False
+) -> Tuple[List[int], List[int], int]:
     """
     For each dt window, choose the first timestamp in the window.
-    Assumes timestamps sorted. One timestamp might be chosen multiple times due to dropped frames.
+    Assume timestamps sorted. One timestamp might be chosen multiple times due to dropped frames.
     next_global_idx should start at 0 normally, and then use the returned next_global_idx. 
     However, when overwiting previous values are desired, set last_global_idx to None.
 
@@ -41,12 +41,12 @@ def get_accumulate_timestamp_idxs(
     return local_idxs, global_idxs, next_global_idx
 
 
-def align_timestamps(    
-        timestamps: List[float], 
-        target_global_idxs: List[int], 
-        start_time: float, 
-        dt: float, 
-        eps:float=1e-5):
+def align_timestamps(
+        timestamps: List[float],
+        target_global_idxs: List[int],
+        start_time: float,
+        dt: float,
+        eps: float = 1e-5):
     if isinstance(target_global_idxs, np.ndarray):
         target_global_idxs = target_global_idxs.tolist()
     assert len(target_global_idxs) > 0
@@ -63,13 +63,14 @@ def align_timestamps(
         # if more steps available, truncate
         global_idxs = global_idxs[:len(target_global_idxs)]
         local_idxs = local_idxs[:len(target_global_idxs)]
-    
+
     if len(global_idxs) == 0:
-        import pdb; pdb.set_trace()
+        import pdb
+        pdb.set_trace()
 
     for i in range(len(target_global_idxs) - len(global_idxs)):
         # if missing, repeat
-        local_idxs.append(len(timestamps)-1)
+        local_idxs.append(len(timestamps) - 1)
         global_idxs.append(global_idxs[-1] + 1)
     assert global_idxs == target_global_idxs
     assert len(local_idxs) == len(global_idxs)
@@ -77,20 +78,20 @@ def align_timestamps(
 
 
 class TimestampObsAccumulator:
-    def __init__(self, 
-            start_time: float, 
-            dt: float, 
-            eps: float=1e-5):
+    def __init__(self,
+                 start_time: float,
+                 dt: float,
+                 eps: float = 1e-5):
         self.start_time = start_time
         self.dt = dt
         self.eps = eps
         self.obs_buffer = dict()
         self.timestamp_buffer = None
         self.next_global_idx = 0
-    
+
     def __len__(self):
         return self.next_global_idx
-    
+
     @property
     def data(self):
         if self.timestamp_buffer is None:
@@ -105,7 +106,7 @@ class TimestampObsAccumulator:
         if self.timestamp_buffer is None:
             return np.array([])
         return self.timestamp_buffer[:len(self)]
-    
+
     @property
     def timestamps(self):
         if self.timestamp_buffer is None:
@@ -134,7 +135,7 @@ class TimestampObsAccumulator:
                     self.obs_buffer[key] = np.zeros_like(value)
                 self.timestamp_buffer = np.zeros(
                     (len(timestamps),), dtype=np.float64)
-            
+
             this_max_size = global_idxs[-1] + 1
             if this_max_size > len(self.timestamp_buffer):
                 # reallocate
@@ -143,7 +144,7 @@ class TimestampObsAccumulator:
                     new_shape = (new_size,) + self.obs_buffer[key].shape[1:]
                     self.obs_buffer[key] = np.resize(self.obs_buffer[key], new_shape)
                 self.timestamp_buffer = np.resize(self.timestamp_buffer, (new_size))
-            
+
             # write data
             for key, value in self.obs_buffer.items():
                 value[global_idxs] = data[key][local_idxs]
@@ -151,10 +152,10 @@ class TimestampObsAccumulator:
 
 
 class TimestampActionAccumulator:
-    def __init__(self, 
-            start_time: float, 
-            dt: float, 
-            eps: float=1e-5):
+    def __init__(self,
+                 start_time: float,
+                 dt: float,
+                 eps: float = 1e-5):
         """
         Different from Obs accumulator, the action accumulator
         allows overwriting previous values.
@@ -165,22 +166,22 @@ class TimestampActionAccumulator:
         self.action_buffer = None
         self.timestamp_buffer = None
         self.size = 0
-    
+
     def __len__(self):
         return self.size
-    
+
     @property
     def actions(self):
         if self.action_buffer is None:
             return np.array([])
         return self.action_buffer[:len(self)]
-    
+
     @property
     def actual_timestamps(self):
         if self.timestamp_buffer is None:
             return np.array([])
         return self.timestamp_buffer[:len(self)]
-    
+
     @property
     def timestamps(self):
         if self.timestamp_buffer is None:
@@ -215,7 +216,7 @@ class TimestampActionAccumulator:
                 new_shape = (new_size,) + self.action_buffer.shape[1:]
                 self.action_buffer = np.resize(self.action_buffer, new_shape)
                 self.timestamp_buffer = np.resize(self.timestamp_buffer, (new_size,))
-            
+
             # potentially rewrite old data (as expected)
             self.action_buffer[global_idxs] = actions[local_idxs]
             self.timestamp_buffer[global_idxs] = timestamps[local_idxs]
