@@ -7,12 +7,8 @@ os.chdir(ROOT_DIR)
 
 from tqdm import tqdm
 import numpy as np
-import scipy.interpolate as si
 import scipy.spatial.transform as st
-from diffusion_policy.common.pose_trajectory_interpolator import (
-    rotation_distance, 
-    pose_distance, 
-    PoseTrajectoryInterpolator)
+from diffusion_policy.common.pose_trajectory_interpolator import rotation_distance, PoseTrajectoryInterpolator
 
 
 def test_rotation_distance():
@@ -20,26 +16,27 @@ def test_rotation_distance():
         return st.Rotation.align_vectors(b.as_matrix().T, a.as_matrix().T)[0].magnitude()
 
     for i in range(10000):
-        a = st.Rotation.from_euler('xyz', np.random.uniform(-7,7,size=3))
-        b = st.Rotation.from_euler('xyz', np.random.uniform(-7,7,size=3))
+        a = st.Rotation.from_euler('xyz', np.random.uniform(-7, 7, size=3))
+        b = st.Rotation.from_euler('xyz', np.random.uniform(-7, 7, size=3))
         x = rotation_distance(a, b)
         y = rotation_distance_align(a, b)
-        assert abs(x-y) < 1e-7
+        assert abs(x - y) < 1e-7
+
 
 def test_pose_trajectory_interpolator():
-    t = np.linspace(-1,5,100)
+    t = np.linspace(-1, 5, 100)
     interp = PoseTrajectoryInterpolator(
-        [0,1,3],
-        np.zeros((3,6))
+        [0, 1, 3],
+        np.zeros((3, 6))
     )
     times = interp.times
     poses = interp.poses
 
-    trimmed_interp = interp.trim(-1,4)
+    trimmed_interp = interp.trim(-1, 4)
     assert len(trimmed_interp.times) == 5
     trimmed_interp(t)
 
-    trimmed_interp = interp.trim(-1,4)
+    trimmed_interp = interp.trim(-1, 4)
     assert len(trimmed_interp.times) == 5
     trimmed_interp(t)
 
@@ -65,6 +62,7 @@ def test_pose_trajectory_interpolator():
 
     # import pdb; pdb.set_trace()
 
+
 def test_add_waypoint():
     # fuzz testing
     for i in tqdm(range(10000)):
@@ -85,7 +83,7 @@ def test_add_waypoint():
                 curr_time = None
 
         interp = PoseTrajectoryInterpolator(
-            times=waypoint_times, 
+            times=waypoint_times,
             poses=waypoint_poses)
         new_interp = interp.add_waypoint(
             pose=new_pose,
@@ -95,6 +93,7 @@ def test_add_waypoint():
             curr_time=curr_time,
             last_waypoint_time=last_waypoint_time
         )
+
 
 def test_drive_to_waypoint():
     # fuzz testing
@@ -110,7 +109,7 @@ def test_drive_to_waypoint():
         new_pose = rng.normal(0, 3, size=6)
 
         interp = PoseTrajectoryInterpolator(
-            times=waypoint_times, 
+            times=waypoint_times,
             poses=waypoint_poses)
         new_interp = interp.drive_to_waypoint(
             pose=new_pose,
@@ -119,7 +118,6 @@ def test_drive_to_waypoint():
             max_pos_speed=max_pos_speed,
             max_rot_speed=max_rot_speed
         )
-
 
 
 if __name__ == '__main__':

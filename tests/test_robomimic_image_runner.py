@@ -7,6 +7,7 @@ os.chdir(ROOT_DIR)
 
 from diffusion_policy.env_runner.robomimic_image_runner import RobomimicImageRunner
 
+
 def test():
     import os
     from omegaconf import OmegaConf
@@ -20,7 +21,7 @@ def test():
     runner_cfg['n_test'] = 1
     del runner_cfg['_target_']
     runner = RobomimicImageRunner(
-        **runner_cfg, 
+        **runner_cfg,
         output_dir='/tmp/test')
 
     # import pdb; pdb.set_trace()
@@ -32,7 +33,8 @@ def test():
     for i in range(10):
         _ = env.step(env.action_space.sample())
 
-    imgs = env.render()
+    # imgs = env.render()
+
 
 if __name__ == '__main__':
     test()

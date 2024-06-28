@@ -9,9 +9,7 @@ import time
 import numpy as np
 import multiprocessing as mp
 from multiprocessing.managers import SharedMemoryManager
-from diffusion_policy.shared_memory.shared_memory_ring_buffer import (
-    SharedMemoryRingBuffer,
-    SharedAtomicCounter)
+from diffusion_policy.shared_memory.shared_memory_ring_buffer import SharedMemoryRingBuffer
 
 
 def test():
@@ -25,7 +23,7 @@ def test():
     for i in range(30):
         ring_buffer.put({
             'timestamp': np.array(
-                time.perf_counter(), 
+                time.perf_counter(),
                 dtype=np.float64)
         })
     print(ring_buffer.get())
@@ -36,7 +34,7 @@ def _timestamp_worker(ring_buffer, start_event, stop_event):
         start_event.set()
         ring_buffer.put({
             'timestamp': np.array(
-                time.time(), 
+                time.time(),
                 dtype=np.float64)
         })
 
@@ -114,8 +112,8 @@ def test_timing():
         if (i % 10 == 0) and (i > 0):
             result = ring_buffer.get_last_k(8)
 
-        t_end =time.monotonic()
-        desired_t = (i+1) * dt + t_init
+        t_end = time.monotonic()
+        desired_t = (i + 1) * dt + t_init
         if desired_t > t_end:
             time.sleep(desired_t - t_end)
         hz = 1 / (time.monotonic() - t_start)
@@ -135,7 +133,7 @@ def _timestamp_image_worker(ring_buffer, img_shape, dt, start_event, stop_event)
             'counter': i
         })
         t_end = time.monotonic()
-        desired_t = (i+1) * dt + t_init
+        desired_t = (i + 1) * dt + t_init
         # print('alive')
         if desired_t > t_end:
             time.sleep(desired_t - t_end)
@@ -148,7 +146,7 @@ def test_timing_mp():
     shm_manager.start()
 
     hz = 200
-    img_shape = (1920,1080,3)
+    img_shape = (1920, 1080, 3)
     ring_buffer = SharedMemoryRingBuffer.create_from_examples(
         shm_manager,
         examples={
@@ -163,7 +161,7 @@ def test_timing_mp():
     start_event = mp.Event()
     stop_event = mp.Event()
     worker = mp.Process(target=_timestamp_image_worker, args=(
-        ring_buffer, img_shape, 1/hz, start_event, stop_event))
+        ring_buffer, img_shape, 1 / hz, start_event, stop_event))
     worker.start()
     start_event.wait()
     out = None
@@ -178,7 +176,7 @@ def test_timing_mp():
         curr_t = time.time()
         print('latency', curr_t - t)
     t_end = time.monotonic()
-    print('Get Hz', 1/(t_end-t_start)*1000)
+    print('Get Hz', 1 / (t_end - t_start) * 1000)
     stop_event.set()
     worker.join()
 

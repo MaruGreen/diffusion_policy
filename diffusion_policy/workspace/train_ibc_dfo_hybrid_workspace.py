@@ -1,4 +1,4 @@
-if __name__ == "__main__":
+if __name__ == '__main__':
     import sys
     import os
     import pathlib
@@ -18,7 +18,6 @@ import random
 import wandb
 import tqdm
 import numpy as np
-import shutil
 from diffusion_policy.workspace.base_workspace import BaseWorkspace
 from diffusion_policy.policy.ibc_dfo_hybrid_image_policy import IbcDfoHybridImagePolicy
 from diffusion_policy.dataset.base_dataset import BaseImageDataset
@@ -26,10 +25,10 @@ from diffusion_policy.env_runner.base_image_runner import BaseImageRunner
 from diffusion_policy.common.checkpoint_util import TopKCheckpointManager
 from diffusion_policy.common.json_logger import JsonLogger
 from diffusion_policy.common.pytorch_util import dict_apply, optimizer_to
-from diffusion_policy.model.diffusion.ema_model import EMAModel
 from diffusion_policy.model.common.lr_scheduler import get_scheduler
 
-OmegaConf.register_new_resolver("eval", eval, replace=True)
+OmegaConf.register_new_resolver('eval', eval, replace=True)
+
 
 class TrainIbcDfoHybridWorkspace(BaseWorkspace):
     include_keys = ['global_step', 'epoch']
@@ -44,7 +43,7 @@ class TrainIbcDfoHybridWorkspace(BaseWorkspace):
         random.seed(seed)
 
         # configure model
-        self.model: IbcDfoHybridImagePolicy= hydra.utils.instantiate(cfg.policy)
+        self.model: IbcDfoHybridImagePolicy = hydra.utils.instantiate(cfg.policy)
 
         # configure training state
         self.optimizer = hydra.utils.instantiate(
@@ -83,11 +82,11 @@ class TrainIbcDfoHybridWorkspace(BaseWorkspace):
             optimizer=self.optimizer,
             num_warmup_steps=cfg.training.lr_warmup_steps,
             num_training_steps=(
-                len(train_dataloader) * cfg.training.num_epochs) \
-                    // cfg.training.gradient_accumulate_every,
+                                       len(train_dataloader) * cfg.training.num_epochs) \
+                               // cfg.training.gradient_accumulate_every,
             # pytorch assumes stepping LRScheduler every epoch
             # however huggingface diffusers steps it every batch
-            last_epoch=self.global_step-1
+            last_epoch=self.global_step - 1
         )
 
         # configure env
@@ -139,8 +138,8 @@ class TrainIbcDfoHybridWorkspace(BaseWorkspace):
                 step_log = dict()
                 # ========= train for this epoch ==========
                 train_losses = list()
-                with tqdm.tqdm(train_dataloader, desc=f"Training epoch {self.epoch}", 
-                        leave=False, mininterval=cfg.training.tqdm_interval_sec) as tepoch:
+                with tqdm.tqdm(train_dataloader, desc=f"Training epoch {self.epoch}",
+                               leave=False, mininterval=cfg.training.tqdm_interval_sec) as tepoch:
                     for batch_idx, batch in enumerate(tepoch):
                         # device transfer
                         batch = dict_apply(batch, lambda x: x.to(device, non_blocking=True))
@@ -169,7 +168,7 @@ class TrainIbcDfoHybridWorkspace(BaseWorkspace):
                             'lr': lr_scheduler.get_last_lr()[0]
                         }
 
-                        is_last_batch = (batch_idx == (len(train_dataloader)-1))
+                        is_last_batch = (batch_idx == (len(train_dataloader) - 1))
                         if not is_last_batch:
                             # log of last step is combined with validation and rollout
                             wandb_run.log(step_log, step=self.global_step)
@@ -177,7 +176,7 @@ class TrainIbcDfoHybridWorkspace(BaseWorkspace):
                             self.global_step += 1
 
                         if (cfg.training.max_train_steps is not None) \
-                            and batch_idx >= (cfg.training.max_train_steps-1):
+                                and batch_idx >= (cfg.training.max_train_steps - 1):
                             break
 
                 # at the end of each epoch
@@ -199,14 +198,14 @@ class TrainIbcDfoHybridWorkspace(BaseWorkspace):
                 if (self.epoch % cfg.training.val_every) == 0:
                     with torch.no_grad():
                         val_losses = list()
-                        with tqdm.tqdm(val_dataloader, desc=f"Validation epoch {self.epoch}", 
-                                leave=False, mininterval=cfg.training.tqdm_interval_sec) as tepoch:
+                        with tqdm.tqdm(val_dataloader, desc=f"Validation epoch {self.epoch}",
+                                       leave=False, mininterval=cfg.training.tqdm_interval_sec) as tepoch:
                             for batch_idx, batch in enumerate(tepoch):
                                 batch = dict_apply(batch, lambda x: x.to(device, non_blocking=True))
                                 loss = self.model.compute_loss(batch)
                                 val_losses.append(loss)
                                 if (cfg.training.max_val_steps is not None) \
-                                    and batch_idx >= (cfg.training.max_val_steps-1):
+                                        and batch_idx >= (cfg.training.max_val_steps - 1):
                                     break
                         if len(val_losses) > 0:
                             val_loss = torch.mean(torch.tensor(val_losses)).item()
@@ -219,16 +218,16 @@ class TrainIbcDfoHybridWorkspace(BaseWorkspace):
                         # sample trajectory from training set, and evaluate difference
                         batch = train_sampling_batch
                         n_samples = cfg.training.sample_max_batch
-                        batch = dict_apply(train_sampling_batch, 
-                            lambda x: x.to(device, non_blocking=True))
+                        batch = dict_apply(train_sampling_batch,
+                                           lambda x: x.to(device, non_blocking=True))
                         obs_dict = dict_apply(batch['obs'], lambda x: x[:n_samples])
                         gt_action = batch['action']
-                        
+
                         result = policy.predict_action(obs_dict)
                         pred_action = result['action']
                         start = cfg.n_obs_steps - 1
                         end = start + cfg.n_action_steps
-                        gt_action = gt_action[:,start:end]
+                        gt_action = gt_action[:, start:end]
                         mse = torch.nn.functional.mse_loss(pred_action, gt_action)
                         # log
                         step_log['train_action_mse_error'] = mse.item()
@@ -239,7 +238,7 @@ class TrainIbcDfoHybridWorkspace(BaseWorkspace):
                         del result
                         del pred_action
                         del mse
-                
+
                 # checkpoint
                 if (self.epoch % cfg.training.checkpoint_every) == 0:
                     # checkpointing
@@ -253,7 +252,7 @@ class TrainIbcDfoHybridWorkspace(BaseWorkspace):
                     for key, value in step_log.items():
                         new_key = key.replace('/', '_')
                         metric_dict[new_key] = value
-                    
+
                     # We can't copy the last checkpoint here
                     # since save_checkpoint uses threads.
                     # therefore at this point the file might have been empty!
@@ -271,13 +270,15 @@ class TrainIbcDfoHybridWorkspace(BaseWorkspace):
                 self.global_step += 1
                 self.epoch += 1
 
+
 @hydra.main(
     version_base=None,
-    config_path=str(pathlib.Path(__file__).parent.parent.joinpath("config")), 
+    config_path=str(pathlib.Path(__file__).parent.parent.joinpath("config")),
     config_name=pathlib.Path(__file__).stem)
 def main(cfg):
     workspace = TrainIbcDfoHybridWorkspace(cfg)
     workspace.run()
+
 
 if __name__ == "__main__":
     main()

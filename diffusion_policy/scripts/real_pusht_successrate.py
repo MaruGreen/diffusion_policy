@@ -1,17 +1,15 @@
-if __name__ == "__main__":
+if __name__ == '__main__':
     import sys
-    import os
     import pathlib
 
     ROOT_DIR = str(pathlib.Path(__file__).parent.parent.parent)
     sys.path.append(ROOT_DIR)
 
-import os
+import pathlib
 import click
 import collections
-import numpy as np
-from tqdm import tqdm
 import json
+
 
 @click.command()
 @click.option(
@@ -25,7 +23,7 @@ import json
 def main(reference, input):
     # compute the min last metric for demo metrics
     demo_metrics = json.load(open(reference, 'r'))
-    demo_min_metrics = collections.defaultdict(lambda:float('inf'))
+    demo_min_metrics = collections.defaultdict(lambda: float('inf'))
     for episode_idx, metrics in demo_metrics.items():
         for key, value in metrics.items():
             last_value = value[-1]
@@ -36,7 +34,7 @@ def main(reference, input):
     name = 'metrics_raw.json'
     search_dir = pathlib.Path(input)
     success_rate_map = dict()
-    for json_path in search_dir.glob('**/'+name):
+    for json_path in search_dir.glob('**/' + name):
         rel_path = json_path.relative_to(search_dir)
         rel_name = str(rel_path.parent)
         this_metrics = json.load(json_path.open('r'))
@@ -61,9 +59,10 @@ def main(reference, input):
             metric_success_rate[key] = len(value) / n_episodes
         # metric_success_rate['failured_idxs'] = metric_failure_idxs
         success_rate_map[rel_name] = metric_success_rate
-    
+
     text = json.dumps(success_rate_map, indent=2)
     print(text)
+
 
 if __name__ == '__main__':
     main()

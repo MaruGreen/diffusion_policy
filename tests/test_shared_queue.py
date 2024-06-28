@@ -50,8 +50,8 @@ def test():
     assert raised
 
     result = queue.get_all()
-    assert np.allclose(result['cmd'], [1,1,1])
-    
+    assert np.allclose(result['cmd'], [1, 1, 1])
+
     queue.put({'cmd': 0})
     queue.put({'cmd': 1})
     queue.put({'cmd': 2})
@@ -59,9 +59,10 @@ def test():
     queue.put({'cmd': 3})
 
     result = queue.get_k(3)
-    assert np.allclose(result['cmd'], [1,2,3])
+    assert np.allclose(result['cmd'], [1, 2, 3])
 
     queue.clear()
+
 
 if __name__ == "__main__":
     test()

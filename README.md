@@ -1,27 +1,5 @@
 # Diffusion Policy
 
-[[Project page]](https://diffusion-policy.cs.columbia.edu/)
-[[Paper]](https://diffusion-policy.cs.columbia.edu/#paper)
-[[Data]](https://diffusion-policy.cs.columbia.edu/data/)
-[[Colab (state)]](https://colab.research.google.com/drive/1gxdkgRVfM55zihY9TFLja97cSVZOZq2B?usp=sharing)
-[[Colab (vision)]](https://colab.research.google.com/drive/18GIHeOQ5DyjMN8iIRZL2EKZ0745NLIpg?usp=sharing)
-
-
-[Cheng Chi](http://cheng-chi.github.io/)<sup>1</sup>,
-[Siyuan Feng](https://www.cs.cmu.edu/~sfeng/)<sup>2</sup>,
-[Yilun Du](https://yilundu.github.io/)<sup>3</sup>,
-[Zhenjia Xu](https://www.zhenjiaxu.com/)<sup>1</sup>,
-[Eric Cousineau](https://www.eacousineau.com/)<sup>2</sup>,
-[Benjamin Burchfiel](http://www.benburchfiel.com/)<sup>2</sup>,
-[Shuran Song](https://www.cs.columbia.edu/~shurans/)<sup>1</sup>
-
-<sup>1</sup>Columbia University,
-<sup>2</sup>Toyota Research Institute,
-<sup>3</sup>MIT
-
-<img src="media/teaser.png" alt="drawing" width="100%"/>
-<img src="media/multimodal_sim.png" alt="drawing" width="100%"/>
-
 ## 🛝 Try it out!
 Our self-contained Google Colab notebooks is the easiest way to play with Diffusion Policy. We provide separate notebooks for  [state-based environment](https://colab.research.google.com/drive/1gxdkgRVfM55zihY9TFLja97cSVZOZq2B?usp=sharing) and [vision-based environment](https://colab.research.google.com/drive/18GIHeOQ5DyjMN8iIRZL2EKZ0745NLIpg?usp=sharing).
 

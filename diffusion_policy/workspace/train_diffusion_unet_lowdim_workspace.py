@@ -1,4 +1,4 @@
-if __name__ == "__main__":
+if __name__ == '__main__':
     import sys
     import os
     import pathlib
@@ -18,6 +18,7 @@ import numpy as np
 import random
 # import wandb
 import tqdm
+from diffusers.training_utils import EMAModel
 
 from diffusion_policy.common.pytorch_util import dict_apply, optimizer_to
 from diffusion_policy.workspace.base_workspace import BaseWorkspace
@@ -27,9 +28,8 @@ from diffusion_policy.env_runner.base_lowdim_runner import BaseLowdimRunner
 from diffusion_policy.common.checkpoint_util import TopKCheckpointManager
 from diffusion_policy.common.json_logger import JsonLogger
 from diffusion_policy.model.common.lr_scheduler import get_scheduler
-from diffusers.training_utils import EMAModel
 
-OmegaConf.register_new_resolver("eval", eval, replace=True)
+OmegaConf.register_new_resolver('eval', eval, replace=True)
 
 
 # %%

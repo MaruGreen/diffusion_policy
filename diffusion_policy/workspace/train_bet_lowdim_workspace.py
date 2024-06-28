@@ -1,4 +1,4 @@
-if __name__ == "__main__":
+if __name__ == '__main__':
     import sys
     import os
     import pathlib
@@ -18,7 +18,6 @@ import random
 import wandb
 import tqdm
 import numpy as np
-import shutil
 
 from diffusion_policy.common.pytorch_util import dict_apply, optimizer_to
 from diffusion_policy.workspace.base_workspace import BaseWorkspace
@@ -26,14 +25,11 @@ from diffusion_policy.policy.bet_lowdim_policy import BETLowdimPolicy
 from diffusion_policy.dataset.base_dataset import BaseLowdimDataset
 from diffusion_policy.env_runner.base_lowdim_runner import BaseLowdimRunner
 from diffusion_policy.common.checkpoint_util import TopKCheckpointManager
-from diffusion_policy.model.common.normalizer import (
-    LinearNormalizer, 
-    SingleFieldLinearNormalizer
-)
+from diffusion_policy.model.common.normalizer import LinearNormalizer, SingleFieldLinearNormalizer
 from diffusion_policy.common.json_logger import JsonLogger
-from diffusers.training_utils import EMAModel
 
-OmegaConf.register_new_resolver("eval", eval, replace=True)
+OmegaConf.register_new_resolver('eval', eval, replace=True)
+
 
 # %%
 class TrainBETLowdimWorkspace(BaseWorkspace):
@@ -58,7 +54,6 @@ class TrainBETLowdimWorkspace(BaseWorkspace):
         self.global_step = 0
         self.epoch = 0
 
-
     def run(self):
         cfg = copy.deepcopy(self.cfg)
         OmegaConf.resolve(cfg)
@@ -67,7 +62,7 @@ class TrainBETLowdimWorkspace(BaseWorkspace):
         if cfg.training.resume:
             lastest_ckpt_path = self.get_checkpoint_path()
             if lastest_ckpt_path.is_file():
-                print(f"Resuming from checkpoint {lastest_ckpt_path}")
+                print(f'Resuming from checkpoint {lastest_ckpt_path}')
                 self.load_checkpoint(path=lastest_ckpt_path)
 
         # configure dataset
@@ -93,8 +88,8 @@ class TrainBETLowdimWorkspace(BaseWorkspace):
 
         # fit action_ae (K-Means)
         self.policy.fit_action_ae(
-                normalizer['action'].normalize(
-                    dataset.get_all_actions()))
+            normalizer['action'].normalize(
+                dataset.get_all_actions()))
 
         # configure env runner
         env_runner: BaseLowdimRunner
@@ -111,7 +106,7 @@ class TrainBETLowdimWorkspace(BaseWorkspace):
         )
         wandb.config.update(
             {
-                "output_dir": self.output_dir,
+                'output_dir': self.output_dir,
             }
         )
 
@@ -125,7 +120,7 @@ class TrainBETLowdimWorkspace(BaseWorkspace):
         device = torch.device(cfg.training.device)
         self.policy.to(device)
         optimizer_to(self.optimizer, device)
-        
+
         # save batch for sampling
         train_sampling_batch = None
 
@@ -145,8 +140,8 @@ class TrainBETLowdimWorkspace(BaseWorkspace):
                 step_log = dict()
                 # ========= train for this epoch ==========
                 train_losses = list()
-                with tqdm.tqdm(train_dataloader, desc=f"Training epoch {self.epoch}", 
-                        leave=False, mininterval=cfg.training.tqdm_interval_sec) as tepoch:
+                with tqdm.tqdm(train_dataloader, desc=f"Training epoch {self.epoch}",
+                               leave=False, mininterval=cfg.training.tqdm_interval_sec) as tepoch:
                     for batch_idx, batch in enumerate(tepoch):
                         # device transfer
                         batch = dict_apply(batch, lambda x: x.to(device, non_blocking=True))
@@ -180,7 +175,7 @@ class TrainBETLowdimWorkspace(BaseWorkspace):
                             'train_loss_class': loss_components['class'].item()
                         }
 
-                        is_last_batch = (batch_idx == (len(train_dataloader)-1))
+                        is_last_batch = (batch_idx == (len(train_dataloader) - 1))
                         if not is_last_batch:
                             # log of last step is combined with validation and rollout
                             wandb_run.log(step_log, step=self.global_step)
@@ -188,7 +183,7 @@ class TrainBETLowdimWorkspace(BaseWorkspace):
                             self.global_step += 1
 
                         if (cfg.training.max_train_steps is not None) \
-                            and batch_idx >= (cfg.training.max_train_steps-1):
+                                and batch_idx >= (cfg.training.max_train_steps - 1):
                             break
 
                 # at the end of each epoch
@@ -204,19 +199,19 @@ class TrainBETLowdimWorkspace(BaseWorkspace):
                     runner_log = env_runner.run(self.policy)
                     # log all
                     step_log.update(runner_log)
-                
+
                 # run validation
                 if (self.epoch % cfg.training.val_every) == 0:
                     with torch.no_grad():
                         val_losses = list()
-                        with tqdm.tqdm(val_dataloader, desc=f"Validation epoch {self.epoch}", 
-                                leave=False, mininterval=cfg.training.tqdm_interval_sec) as tepoch:
+                        with tqdm.tqdm(val_dataloader, desc=f"Validation epoch {self.epoch}",
+                                       leave=False, mininterval=cfg.training.tqdm_interval_sec) as tepoch:
                             for batch_idx, batch in enumerate(tepoch):
                                 batch = dict_apply(batch, lambda x: x.to(device, non_blocking=True))
                                 raw_loss, loss_components = self.policy.compute_loss(batch)
                                 val_losses.append(raw_loss)
                                 if (cfg.training.max_val_steps is not None) \
-                                    and batch_idx >= (cfg.training.max_val_steps-1):
+                                        and batch_idx >= (cfg.training.max_val_steps - 1):
                                     break
                         if len(val_losses) > 0:
                             val_loss = torch.mean(torch.tensor(val_losses)).item()
@@ -230,13 +225,13 @@ class TrainBETLowdimWorkspace(BaseWorkspace):
                         batch = train_sampling_batch
                         obs_dict = {'obs': batch['obs']}
                         gt_action = batch['action']
-                        
+
                         result = self.policy.predict_action(obs_dict)
                         if cfg.pred_action_steps_only:
                             pred_action = result['action']
                             start = cfg.n_obs_steps - 1
                             end = start + cfg.n_action_steps
-                            gt_action = gt_action[:,start:end]
+                            gt_action = gt_action[:, start:end]
                         else:
                             pred_action = result['action_pred']
                         mse = torch.nn.functional.mse_loss(pred_action, gt_action)
@@ -263,7 +258,7 @@ class TrainBETLowdimWorkspace(BaseWorkspace):
                     for key, value in step_log.items():
                         new_key = key.replace('/', '_')
                         metric_dict[new_key] = value
-                    
+
                     # We can't copy the last checkpoint here
                     # since save_checkpoint uses threads.
                     # therefore at this point the file might have been empty!
@@ -281,13 +276,15 @@ class TrainBETLowdimWorkspace(BaseWorkspace):
                 self.global_step += 1
                 self.epoch += 1
 
+
 @hydra.main(
     version_base=None,
-    config_path=str(pathlib.Path(__file__).parent.parent.joinpath("config")), 
+    config_path=str(pathlib.Path(__file__).parent.parent.joinpath('config')),
     config_name=pathlib.Path(__file__).stem)
 def main(cfg):
     workspace = TrainBETLowdimWorkspace(cfg)
     workspace.run()
+
 
 if __name__ == "__main__":
     main()

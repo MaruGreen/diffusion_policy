@@ -1,6 +1,4 @@
 from typing import Dict, List, Union
-
-from queue import Empty
 import numbers
 import time
 from multiprocessing.managers import SharedMemoryManager
@@ -9,20 +7,21 @@ import numpy as np
 from diffusion_policy.shared_memory.shared_ndarray import SharedNDArray
 from diffusion_policy.shared_memory.shared_memory_util import ArraySpec, SharedAtomicCounter
 
+
 class SharedMemoryRingBuffer:
     """
     A Lock-Free FILO Shared Memory Data Structure.
     Stores a sequence of dict of numpy arrays.
     """
 
-    def __init__(self, 
-            shm_manager: SharedMemoryManager,
-            array_specs: List[ArraySpec],
-            get_max_k: int,
-            get_time_budget: float,
-            put_desired_frequency: float,
-            safety_margin: float=1.5
-        ):
+    def __init__(self,
+                 shm_manager: SharedMemoryManager,
+                 array_specs: List[ArraySpec],
+                 get_max_k: int,
+                 get_time_budget: float,
+                 put_desired_frequency: float,
+                 safety_margin: float = 1.5
+                 ):
         """
         shm_manager: Manages the life cycle of share memories 
             across processes. Remember to run .start() before passing.
@@ -44,7 +43,7 @@ class SharedMemoryRingBuffer:
         # we need enough empty slots to make sure put_desired_frequency Hz
         # of put can be sustaied.
         buffer_size = int(np.ceil(
-            put_desired_frequency * get_time_budget 
+            put_desired_frequency * get_time_budget
             * safety_margin)) + get_max_k
 
         # allocate shared memory
@@ -57,14 +56,14 @@ class SharedMemoryRingBuffer:
                 shape=(buffer_size,) + tuple(spec.shape),
                 dtype=spec.dtype)
             shared_arrays[key] = array
-        
+
         # allocate timestamp array
         timestamp_array = SharedNDArray.create_from_shape(
-            mem_mgr=shm_manager, 
+            mem_mgr=shm_manager,
             shape=(buffer_size,),
             dtype=np.float64)
         timestamp_array.get()[:] = -np.inf
-        
+
         self.buffer_size = buffer_size
         self.array_specs = array_specs
         self.counter = counter
@@ -74,19 +73,18 @@ class SharedMemoryRingBuffer:
         self.get_max_k = get_max_k
         self.put_desired_frequency = put_desired_frequency
 
-    
     @property
     def count(self):
         return self.counter.load()
-    
+
     @classmethod
-    def create_from_examples(cls, 
-            shm_manager: SharedMemoryManager,
-            examples: Dict[str, Union[np.ndarray, numbers.Number]], 
-            get_max_k: int=32,
-            get_time_budget: float=0.01,
-            put_desired_frequency: float=60
-            ):
+    def create_from_examples(cls,
+                             shm_manager: SharedMemoryManager,
+                             examples: Dict[str, Union[np.ndarray, numbers.Number]],
+                             get_max_k: int = 32,
+                             get_time_budget: float = 0.01,
+                             put_desired_frequency: float = 60
+                             ):
         specs = list()
         for key, value in examples.items():
             shape = None
@@ -114,13 +112,13 @@ class SharedMemoryRingBuffer:
             get_max_k=get_max_k,
             get_time_budget=get_time_budget,
             put_desired_frequency=put_desired_frequency
-            )
+        )
         return obj
 
     def clear(self):
         self.counter.store(0)
-    
-    def put(self, data: Dict[str, Union[np.ndarray, numbers.Number]], wait: bool=True):
+
+    def put(self, data: Dict[str, Union[np.ndarray, numbers.Number]], wait: bool = True):
         count = self.counter.load()
         next_idx = count % self.buffer_size
         # Make sure the next self.get_max_k elements in the ring buffer have at least 
@@ -142,7 +140,7 @@ class SharedMemoryRingBuffer:
                 hz = past_iters / deltat
                 raise TimeoutError(
                     'Put executed too fast {}items/{:.4f}s ~= {}Hz'.format(
-                        past_iters, deltat,hz))
+                        past_iters, deltat, hz))
 
         # write to shared memory
         for key, value in data.items():
@@ -152,7 +150,7 @@ class SharedMemoryRingBuffer:
                 arr[next_idx] = value
             else:
                 arr[next_idx] = np.array(value, dtype=arr.dtype)
-        
+
         # update timestamp
         self.timestamp_array.get()[next_idx] = time.monotonic()
         self.counter.add(1)
@@ -181,8 +179,8 @@ class SharedMemoryRingBuffer:
         if dt > self.get_time_budget:
             raise TimeoutError(f'Get time out {dt} vs {self.get_time_budget}')
         return out
-    
-    def get_last_k(self, k:int, out=None) -> Dict[str, np.ndarray]:
+
+    def get_last_k(self, k: int, out=None) -> Dict[str, np.ndarray]:
         assert k <= self.get_max_k
         if out is None:
             out = self._allocate_empty(k)

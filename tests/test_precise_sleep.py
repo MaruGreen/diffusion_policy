@@ -22,7 +22,7 @@ def test_sleep():
 
     from matplotlib import pyplot as plt
     plt.plot(time_deltas)
-    plt.ylim((dt-tol,dt+tol))
+    plt.ylim((dt - tol, dt + tol))
 
 
 def test_wait():
@@ -30,7 +30,7 @@ def test_wait():
     tol = 1e-3
     errors = list()
     t_start = time.monotonic()
-    for i in range(1,100):
+    for i in range(1, 100):
         t_end_desired = t_start + i * dt
         time.sleep(t_end_desired - time.monotonic())
         t_end = time.monotonic()
@@ -38,19 +38,19 @@ def test_wait():
 
     new_errors = list()
     t_start = time.monotonic()
-    for i in range(1,100):
+    for i in range(1, 100):
         t_end_desired = t_start + i * dt
         precise_wait(t_end_desired)
         t_end = time.monotonic()
         new_errors.append(t_end - t_end_desired)
-    
+
     from matplotlib import pyplot as plt
     plt.plot(errors, label='time.sleep')
     plt.plot(new_errors, label='sleep/spin hybrid')
-    plt.ylim((-tol,+tol))
+    plt.ylim((-tol, +tol))
     plt.title('0.1 sec sleep error')
     plt.legend()
 
-    
+
 if __name__ == '__main__':
     test_sleep()

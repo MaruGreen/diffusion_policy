@@ -1,4 +1,4 @@
-if __name__ == "__main__":
+if __name__ == '__main__':
     import sys
     import os
     import pathlib
@@ -28,7 +28,7 @@ from diffusion_policy.common.pytorch_util import dict_apply, optimizer_to
 from diffusion_policy.model.diffusion.ema_model import EMAModel
 from diffusion_policy.model.common.lr_scheduler import get_scheduler
 
-OmegaConf.register_new_resolver("eval", eval, replace=True)
+OmegaConf.register_new_resolver('eval', eval, replace=True)
 
 
 class TrainDiffusionUnetHybridWorkspace(BaseWorkspace):

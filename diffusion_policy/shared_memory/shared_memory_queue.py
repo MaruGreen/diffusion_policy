@@ -3,6 +3,7 @@ import numbers
 from queue import Empty, Full
 from multiprocessing.managers import SharedMemoryManager
 import numpy as np
+
 from diffusion_policy.shared_memory.shared_memory_util import ArraySpec, SharedAtomicCounter
 from diffusion_policy.shared_memory.shared_ndarray import SharedNDArray
 
@@ -14,15 +15,15 @@ class SharedMemoryQueue:
     """
 
     def __init__(self,
-            shm_manager: SharedMemoryManager,
-            array_specs: List[ArraySpec],
-            buffer_size: int
-        ):
+                 shm_manager: SharedMemoryManager,
+                 array_specs: List[ArraySpec],
+                 buffer_size: int
+                 ):
 
         # create atomic counter
         write_counter = SharedAtomicCounter(shm_manager)
         read_counter = SharedAtomicCounter(shm_manager)
-        
+
         # allocate shared memory
         shared_arrays = dict()
         for spec in array_specs:
@@ -33,19 +34,19 @@ class SharedMemoryQueue:
                 shape=(buffer_size,) + tuple(spec.shape),
                 dtype=spec.dtype)
             shared_arrays[key] = array
-        
+
         self.buffer_size = buffer_size
         self.array_specs = array_specs
         self.write_counter = write_counter
         self.read_counter = read_counter
         self.shared_arrays = shared_arrays
-    
+
     @classmethod
-    def create_from_examples(cls, 
-            shm_manager: SharedMemoryManager,
-            examples: Dict[str, Union[np.ndarray, numbers.Number]], 
-            buffer_size: int
-            ):
+    def create_from_examples(cls,
+                             shm_manager: SharedMemoryManager,
+                             examples: Dict[str, Union[np.ndarray, numbers.Number]],
+                             buffer_size: int
+                             ):
         specs = list()
         for key, value in examples.items():
             shape = None
@@ -71,29 +72,29 @@ class SharedMemoryQueue:
             shm_manager=shm_manager,
             array_specs=specs,
             buffer_size=buffer_size
-            )
+        )
         return obj
-    
+
     def qsize(self):
         read_count = self.read_counter.load()
         write_count = self.write_counter.load()
         n_data = write_count - read_count
         return n_data
-    
+
     def empty(self):
         n_data = self.qsize()
         return n_data <= 0
-    
+
     def clear(self):
         self.read_counter.store(self.write_counter.load())
-    
+
     def put(self, data: Dict[str, Union[np.ndarray, numbers.Number]]):
         read_count = self.read_counter.load()
         write_count = self.write_counter.load()
         n_data = write_count - read_count
         if n_data >= self.buffer_size:
             raise Full()
-        
+
         next_idx = write_count % self.buffer_size
 
         # write to shared memory
@@ -107,7 +108,7 @@ class SharedMemoryQueue:
 
         # update idx
         self.write_counter.add(1)
-    
+
     def get(self, out=None) -> Dict[str, np.ndarray]:
         write_count = self.write_counter.load()
         read_count = self.read_counter.load()
@@ -122,7 +123,7 @@ class SharedMemoryQueue:
         for key, value in self.shared_arrays.items():
             arr = value.get()
             np.copyto(out[key], arr[next_idx])
-        
+
         # update idx
         self.read_counter.add(1)
         return out
@@ -149,7 +150,7 @@ class SharedMemoryQueue:
         out = self._get_k_impl(n_data, read_count, out=out)
         self.read_counter.add(n_data)
         return out
-    
+
     def _get_k_impl(self, k, read_count, out=None) -> Dict[str, np.ndarray]:
         if out is None:
             out = self._allocate_empty(k)
@@ -175,7 +176,7 @@ class SharedMemoryQueue:
                 target[target_start: target_end] = arr[start:end]
 
         return out
-    
+
     def _allocate_empty(self, k=None):
         result = dict()
         for spec in self.array_specs:

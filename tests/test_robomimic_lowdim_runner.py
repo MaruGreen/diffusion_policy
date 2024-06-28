@@ -7,6 +7,7 @@ os.chdir(ROOT_DIR)
 
 from diffusion_policy.env_runner.robomimic_lowdim_runner import RobomimicLowdimRunner
 
+
 def test():
     import os
     from omegaconf import OmegaConf
@@ -20,7 +21,7 @@ def test():
     runner_cfg['n_test'] = 0
     del runner_cfg['_target_']
     runner = RobomimicLowdimRunner(
-        **runner_cfg, 
+        **runner_cfg,
         output_dir='/tmp/test')
 
     # import pdb; pdb.set_trace()
@@ -29,6 +30,7 @@ def test():
     env = self.env
     env.seed(seeds=self.env_seeds)
     obs = env.reset()
+
 
 if __name__ == '__main__':
     test()

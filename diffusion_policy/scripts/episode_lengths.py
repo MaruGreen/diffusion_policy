@@ -1,6 +1,5 @@
-if __name__ == "__main__":
+if __name__ == '__main__':
     import sys
-    import os
     import pathlib
 
     ROOT_DIR = str(pathlib.Path(__file__).parent.parent.parent)
@@ -9,7 +8,9 @@ if __name__ == "__main__":
 import click
 import numpy as np
 import json
+
 from diffusion_policy.common.replay_buffer import ReplayBuffer
+
 
 @click.command()
 @click.option('--input', '-i', required=True)
@@ -24,6 +25,7 @@ def main(input, dt):
 
     text = json.dumps(result, indent=2)
     print(text)
+
 
 if __name__ == '__main__':
     main()
