@@ -17,31 +17,33 @@ from diffusion_policy.policy.base_image_policy import BaseImagePolicy
 from diffusion_policy.common.pytorch_util import dict_apply
 from diffusion_policy.env_runner.base_image_runner import BaseImageRunner
 
+
 class PushTImageRunner(BaseImageRunner):
     def __init__(self,
-            output_dir,
-            n_train=10,
-            n_train_vis=3,
-            train_start_seed=0,
-            n_test=22,
-            n_test_vis=6,
-            legacy_test=False,
-            test_start_seed=10000,
-            max_steps=200,
-            n_obs_steps=8,
-            n_action_steps=8,
-            fps=10,
-            crf=22,
-            render_size=96,
-            past_action=False,
-            tqdm_interval_sec=5.0,
-            n_envs=None
-        ):
+                 output_dir,
+                 n_train=10,
+                 n_train_vis=3,
+                 train_start_seed=0,
+                 n_test=22,
+                 n_test_vis=6,
+                 legacy_test=False,
+                 test_start_seed=10000,
+                 max_steps=200,
+                 n_obs_steps=8,
+                 n_action_steps=8,
+                 fps=10,
+                 crf=22,
+                 render_size=96,
+                 past_action=False,
+                 tqdm_interval_sec=5.0,
+                 n_envs=None
+                 ):
         super().__init__(output_dir)
         if n_envs is None:
             n_envs = n_train + n_test
 
         steps_per_render = max(10 // fps, 1)
+
         def env_fn():
             return MultiStepWrapper(
                 VideoRecordingWrapper(
@@ -90,7 +92,7 @@ class PushTImageRunner(BaseImageRunner):
                 # set seed
                 assert isinstance(env, MultiStepWrapper)
                 env.seed(seed)
-            
+
             env_seeds.append(seed)
             env_prefixs.append('train/')
             env_init_fn_dills.append(dill.dumps(init_fn))
@@ -116,7 +118,7 @@ class PushTImageRunner(BaseImageRunner):
                 # set seed
                 assert isinstance(env, MultiStepWrapper)
                 env.seed(seed)
-            
+
             env_seeds.append(seed)
             env_prefixs.append('test/')
             env_init_fn_dills.append(dill.dumps(init_fn))
@@ -141,7 +143,7 @@ class PushTImageRunner(BaseImageRunner):
         self.past_action = past_action
         self.max_steps = max_steps
         self.tqdm_interval_sec = tqdm_interval_sec
-    
+
     def run(self, policy: BaseImagePolicy):
         device = policy.device
         dtype = policy.dtype
@@ -161,25 +163,25 @@ class PushTImageRunner(BaseImageRunner):
             end = min(n_inits, start + n_envs)
             this_global_slice = slice(start, end)
             this_n_active_envs = end - start
-            this_local_slice = slice(0,this_n_active_envs)
-            
+            this_local_slice = slice(0, this_n_active_envs)
+
             this_init_fns = self.env_init_fn_dills[this_global_slice]
             n_diff = n_envs - len(this_init_fns)
             if n_diff > 0:
-                this_init_fns.extend([self.env_init_fn_dills[0]]*n_diff)
+                this_init_fns.extend([self.env_init_fn_dills[0]] * n_diff)
             assert len(this_init_fns) == n_envs
 
             # init envs
-            env.call_each('run_dill_function', 
-                args_list=[(x,) for x in this_init_fns])
+            env.call_each('run_dill_function',
+                          args_list=[(x,) for x in this_init_fns])
 
             # start rollout
             obs = env.reset()
             past_action = None
             policy.reset()
 
-            pbar = tqdm.tqdm(total=self.max_steps, desc=f"Eval PushtImageRunner {chunk_idx+1}/{n_chunks}", 
-                leave=False, mininterval=self.tqdm_interval_sec)
+            pbar = tqdm.tqdm(total=self.max_steps, desc=f"Eval PushtImageRunner {chunk_idx + 1}/{n_chunks}",
+                             leave=False, mininterval=self.tqdm_interval_sec)
             done = False
             while not done:
                 # create obs dict
@@ -187,12 +189,12 @@ class PushTImageRunner(BaseImageRunner):
                 if self.past_action and (past_action is not None):
                     # TODO: not tested
                     np_obs_dict['past_action'] = past_action[
-                        :,-(self.n_obs_steps-1):].astype(np.float32)
-                
+                                                 :, -(self.n_obs_steps - 1):].astype(np.float32)
+
                 # device transfer
-                obs_dict = dict_apply(np_obs_dict, 
-                    lambda x: torch.from_numpy(x).to(
-                        device=device))
+                obs_dict = dict_apply(np_obs_dict,
+                                      lambda x: torch.from_numpy(x).to(
+                                          device=device))
 
                 # run policy
                 with torch.no_grad():
@@ -200,7 +202,7 @@ class PushTImageRunner(BaseImageRunner):
 
                 # device_transfer
                 np_action_dict = dict_apply(action_dict,
-                    lambda x: x.detach().to('cpu').numpy())
+                                            lambda x: x.detach().to('cpu').numpy())
 
                 action = np_action_dict['action']
 
@@ -234,17 +236,17 @@ class PushTImageRunner(BaseImageRunner):
             prefix = self.env_prefixs[i]
             max_reward = np.max(all_rewards[i])
             max_rewards[prefix].append(max_reward)
-            log_data[prefix+f'sim_max_reward_{seed}'] = max_reward
+            log_data[prefix + f'sim_max_reward_{seed}'] = max_reward
 
             # visualize sim
             video_path = all_video_paths[i]
             if video_path is not None:
                 sim_video = wandb.Video(video_path)
-                log_data[prefix+f'sim_video_{seed}'] = sim_video
+                log_data[prefix + f'sim_video_{seed}'] = sim_video
 
         # log aggregate metrics
         for prefix, value in max_rewards.items():
-            name = prefix+'mean_score'
+            name = prefix + 'mean_score'
             value = np.mean(value)
             log_data[name] = value
 

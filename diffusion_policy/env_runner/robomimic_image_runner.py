@@ -10,7 +10,7 @@ import math
 import dill
 import wandb.sdk.data_types.video as wv
 from diffusion_policy.gym_util.async_vector_env import AsyncVectorEnv
-from diffusion_policy.gym_util.sync_vector_env import SyncVectorEnv
+# from diffusion_policy.gym_util.sync_vector_env import SyncVectorEnv
 from diffusion_policy.gym_util.multistep_wrapper import MultiStepWrapper
 from diffusion_policy.gym_util.video_recording_wrapper import VideoRecordingWrapper, VideoRecorder
 from diffusion_policy.model.common.rotation_transformer import RotationTransformer
@@ -32,9 +32,9 @@ def create_env(env_meta, shape_meta, enable_render=True):
 
     env = EnvUtils.create_env_from_metadata(
         env_meta=env_meta,
-        render=False, 
+        render=False,
         render_offscreen=enable_render,
-        use_image_obs=enable_render, 
+        use_image_obs=enable_render,
     )
     return env
 
@@ -44,27 +44,27 @@ class RobomimicImageRunner(BaseImageRunner):
     Robomimic envs already enforces number of steps.
     """
 
-    def __init__(self, 
-            output_dir,
-            dataset_path,
-            shape_meta:dict,
-            n_train=10,
-            n_train_vis=3,
-            train_start_idx=0,
-            n_test=22,
-            n_test_vis=6,
-            test_start_seed=10000,
-            max_steps=400,
-            n_obs_steps=2,
-            n_action_steps=8,
-            render_obs_key='agentview_image',
-            fps=10,
-            crf=22,
-            past_action=False,
-            abs_action=False,
-            tqdm_interval_sec=5.0,
-            n_envs=None
-        ):
+    def __init__(self,
+                 output_dir,
+                 dataset_path,
+                 shape_meta: dict,
+                 n_train=10,
+                 n_train_vis=3,
+                 train_start_idx=0,
+                 n_test=22,
+                 n_test_vis=6,
+                 test_start_seed=10000,
+                 max_steps=400,
+                 n_obs_steps=2,
+                 n_action_steps=8,
+                 render_obs_key='agentview_image',
+                 fps=10,
+                 crf=22,
+                 past_action=False,
+                 abs_action=False,
+                 tqdm_interval_sec=5.0,
+                 n_envs=None
+                 ):
         super().__init__(output_dir)
 
         if n_envs is None:
@@ -88,7 +88,7 @@ class RobomimicImageRunner(BaseImageRunner):
 
         def env_fn():
             robomimic_env = create_env(
-                env_meta=env_meta, 
+                env_meta=env_meta,
                 shape_meta=shape_meta
             )
             # Robosuite's hard reset causes excessive memory consumption.
@@ -118,17 +118,17 @@ class RobomimicImageRunner(BaseImageRunner):
                 n_action_steps=n_action_steps,
                 max_episode_steps=max_steps
             )
-        
+
         # For each process the OpenGL context can only be initialized once
         # Since AsyncVectorEnv uses fork to create worker process,
         # a separate env_fn that does not create OpenGL context (enable_render=False)
         # is needed to initialize spaces.
         def dummy_env_fn():
             robomimic_env = create_env(
-                    env_meta=env_meta, 
-                    shape_meta=shape_meta,
-                    enable_render=False
-                )
+                env_meta=env_meta,
+                shape_meta=shape_meta,
+                enable_render=False
+            )
             return MultiStepWrapper(
                 VideoRecordingWrapper(
                     RobomimicImageWrapper(
@@ -165,8 +165,8 @@ class RobomimicImageRunner(BaseImageRunner):
                 enable_render = i < n_train_vis
                 init_state = f[f'data/demo_{train_idx}/states'][0]
 
-                def init_fn(env, init_state=init_state, 
-                    enable_render=enable_render):
+                def init_fn(env, init_state=init_state,
+                            enable_render=enable_render):
                     # setup rendering
                     # video_wrapper
                     assert isinstance(env.env, VideoRecordingWrapper)
@@ -186,14 +186,14 @@ class RobomimicImageRunner(BaseImageRunner):
                 env_seeds.append(train_idx)
                 env_prefixs.append('train/')
                 env_init_fn_dills.append(dill.dumps(init_fn))
-        
+
         # test
         for i in range(n_test):
             seed = test_start_seed + i
             enable_render = i < n_test_vis
 
-            def init_fn(env, seed=seed, 
-                enable_render=enable_render):
+            def init_fn(env, seed=seed,
+                        enable_render=enable_render):
                 # setup rendering
                 # video_wrapper
                 assert isinstance(env.env, VideoRecordingWrapper)
@@ -218,7 +218,6 @@ class RobomimicImageRunner(BaseImageRunner):
         env = AsyncVectorEnv(env_fns, dummy_env_fn=dummy_env_fn)
         # env = SyncVectorEnv(env_fns)
 
-
         self.env_meta = env_meta
         self.env = env
         self.env_fns = env_fns
@@ -239,7 +238,7 @@ class RobomimicImageRunner(BaseImageRunner):
         device = policy.device
         dtype = policy.dtype
         env = self.env
-        
+
         # plan for rollout
         n_envs = len(self.env_fns)
         n_inits = len(self.env_init_fn_dills)
@@ -254,17 +253,17 @@ class RobomimicImageRunner(BaseImageRunner):
             end = min(n_inits, start + n_envs)
             this_global_slice = slice(start, end)
             this_n_active_envs = end - start
-            this_local_slice = slice(0,this_n_active_envs)
-            
+            this_local_slice = slice(0, this_n_active_envs)
+
             this_init_fns = self.env_init_fn_dills[this_global_slice]
             n_diff = n_envs - len(this_init_fns)
             if n_diff > 0:
-                this_init_fns.extend([self.env_init_fn_dills[0]]*n_diff)
+                this_init_fns.extend([self.env_init_fn_dills[0]] * n_diff)
             assert len(this_init_fns) == n_envs
 
             # init envs
-            env.call_each('run_dill_function', 
-                args_list=[(x,) for x in this_init_fns])
+            env.call_each('run_dill_function',
+                          args_list=[(x,) for x in this_init_fns])
 
             # start rollout
             obs = env.reset()
@@ -272,9 +271,9 @@ class RobomimicImageRunner(BaseImageRunner):
             policy.reset()
 
             env_name = self.env_meta['env_name']
-            pbar = tqdm.tqdm(total=self.max_steps, desc=f"Eval {env_name}Image {chunk_idx+1}/{n_chunks}", 
-                leave=False, mininterval=self.tqdm_interval_sec)
-            
+            pbar = tqdm.tqdm(total=self.max_steps, desc=f"Eval {env_name}Image {chunk_idx + 1}/{n_chunks}",
+                             leave=False, mininterval=self.tqdm_interval_sec)
+
             done = False
             while not done:
                 # create obs dict
@@ -282,12 +281,12 @@ class RobomimicImageRunner(BaseImageRunner):
                 if self.past_action and (past_action is not None):
                     # TODO: not tested
                     np_obs_dict['past_action'] = past_action[
-                        :,-(self.n_obs_steps-1):].astype(np.float32)
-                
+                                                 :, -(self.n_obs_steps - 1):].astype(np.float32)
+
                 # device transfer
-                obs_dict = dict_apply(np_obs_dict, 
-                    lambda x: torch.from_numpy(x).to(
-                        device=device))
+                obs_dict = dict_apply(np_obs_dict,
+                                      lambda x: torch.from_numpy(x).to(
+                                          device=device))
 
                 # run policy
                 with torch.no_grad():
@@ -295,13 +294,13 @@ class RobomimicImageRunner(BaseImageRunner):
 
                 # device_transfer
                 np_action_dict = dict_apply(action_dict,
-                    lambda x: x.detach().to('cpu').numpy())
+                                            lambda x: x.detach().to('cpu').numpy())
 
                 action = np_action_dict['action']
                 if not np.all(np.isfinite(action)):
                     print(action)
                     raise RuntimeError("Nan or Inf action")
-                
+
                 # step env
                 env_action = action
                 if self.abs_action:
@@ -320,7 +319,7 @@ class RobomimicImageRunner(BaseImageRunner):
             all_rewards[this_global_slice] = env.call('get_attr', 'reward')[this_local_slice]
         # clear out video buffer
         _ = env.reset()
-        
+
         # log
         max_rewards = collections.defaultdict(list)
         log_data = dict()
@@ -337,17 +336,17 @@ class RobomimicImageRunner(BaseImageRunner):
             prefix = self.env_prefixs[i]
             max_reward = np.max(all_rewards[i])
             max_rewards[prefix].append(max_reward)
-            log_data[prefix+f'sim_max_reward_{seed}'] = max_reward
+            log_data[prefix + f'sim_max_reward_{seed}'] = max_reward
 
             # visualize sim
             video_path = all_video_paths[i]
             if video_path is not None:
                 sim_video = wandb.Video(video_path)
-                log_data[prefix+f'sim_video_{seed}'] = sim_video
-        
+                log_data[prefix + f'sim_video_{seed}'] = sim_video
+
         # log aggregate metrics
         for prefix, value in max_rewards.items():
-            name = prefix+'mean_score'
+            name = prefix + 'mean_score'
             value = np.mean(value)
             log_data[name] = value
 
@@ -357,12 +356,12 @@ class RobomimicImageRunner(BaseImageRunner):
         raw_shape = action.shape
         if raw_shape[-1] == 20:
             # dual arm
-            action = action.reshape(-1,2,10)
+            action = action.reshape(-1, 2, 10)
 
         d_rot = action.shape[-1] - 4
-        pos = action[...,:3]
-        rot = action[...,3:3+d_rot]
-        gripper = action[...,[-1]]
+        pos = action[..., :3]
+        rot = action[..., 3:3 + d_rot]
+        gripper = action[..., [-1]]
         rot = self.rotation_transformer.inverse(rot)
         uaction = np.concatenate([
             pos, rot, gripper

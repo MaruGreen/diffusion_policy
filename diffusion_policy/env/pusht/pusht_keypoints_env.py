@@ -1,24 +1,26 @@
-from typing import Dict, Sequence, Union, Optional
+from typing import Dict, Optional
 from gym import spaces
+import numpy as np
+
 from diffusion_policy.env.pusht.pusht_env import PushTEnv
 from diffusion_policy.env.pusht.pymunk_keypoint_manager import PymunkKeypointManager
-import numpy as np
+
 
 class PushTKeypointsEnv(PushTEnv):
     def __init__(self,
-            legacy=False,
-            block_cog=None, 
-            damping=None,
-            render_size=96,
-            keypoint_visible_rate=1.0, 
-            agent_keypoints=False,
-            draw_keypoints=False,
-            reset_to_state=None,
-            render_action=True,
-            local_keypoint_map: Dict[str, np.ndarray]=None, 
-            color_map: Optional[Dict[str, np.ndarray]]=None):
+                 legacy=False,
+                 block_cog=None,
+                 damping=None,
+                 render_size=96,
+                 keypoint_visible_rate=1.0,
+                 agent_keypoints=False,
+                 draw_keypoints=False,
+                 reset_to_state=None,
+                 render_action=True,
+                 local_keypoint_map: Dict[str, np.ndarray] = None,
+                 color_map: Optional[Dict[str, np.ndarray]] = None):
         super().__init__(
-            legacy=legacy, 
+            legacy=legacy,
             block_cog=block_cog,
             damping=damping,
             render_size=render_size,
@@ -91,7 +93,7 @@ class PushTKeypointsEnv(PushTEnv):
         # select keypoints to drop
         n_kps = kps.shape[0]
         visible_kps = self.np_random.random(size=(n_kps,)) < self.keypoint_visible_rate
-        kps_mask = np.repeat(visible_kps[:,None], 2, axis=1)
+        kps_mask = np.repeat(visible_kps[:, None], 2, axis=1)
 
         # save keypoints for rendering
         vis_kps = kps.copy()
@@ -102,7 +104,7 @@ class PushTKeypointsEnv(PushTEnv):
         if self.agent_keypoints:
             draw_kp_map['agent'] = vis_kps[len(kp_map['block']):]
         self.draw_kp_map = draw_kp_map
-        
+
         # construct obs
         obs = kps.flatten()
         obs_mask = kps_mask.flatten()
@@ -121,11 +123,10 @@ class PushTKeypointsEnv(PushTEnv):
             obs, obs_mask.astype(obs.dtype)
         ], axis=0)
         return obs
-    
-    
+
     def _render_frame(self, mode):
         img = super()._render_frame(mode)
         if self.draw_keypoints:
             self.kp_manager.draw_keypoints(
-                img, self.draw_kp_map, radius=int(img.shape[0]/96))
+                img, self.draw_kp_map, radius=int(img.shape[0] / 96))
         return img

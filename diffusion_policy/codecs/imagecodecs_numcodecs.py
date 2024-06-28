@@ -1,4 +1,3 @@
-
 # imagecodecs/numcodecs.py
 
 # Copyright (c) 2021-2022, Christoph Gohlke
@@ -39,7 +38,6 @@ __all__ = ('register_codecs',)
 import numpy
 from numcodecs.abc import Codec
 from numcodecs.registry import register_codec, get_codec
-
 import imagecodecs
 
 
@@ -54,6 +52,7 @@ def protective_squeeze(x: numpy.ndarray):
         if n_imgs > 1:
             img_shape = (-1,) + img_shape
     return x.reshape(img_shape)
+
 
 def get_default_image_compressor(**kwargs):
     if imagecodecs.JPEGXL:
@@ -74,13 +73,14 @@ def get_default_image_compressor(**kwargs):
         this_kwargs.update(kwargs)
         return Jpeg2k(**this_kwargs)
 
+
 class Aec(Codec):
     """AEC codec for numcodecs."""
 
     codec_id = 'imagecodecs_aec'
 
     def __init__(
-        self, bitspersample=None, flags=None, blocksize=None, rsi=None
+            self, bitspersample=None, flags=None, blocksize=None, rsi=None
     ):
         self.bitspersample = bitspersample
         self.flags = flags
@@ -136,14 +136,14 @@ class Avif(Codec):
     codec_id = 'imagecodecs_avif'
 
     def __init__(
-        self,
-        level=None,
-        speed=None,
-        tilelog2=None,
-        bitspersample=None,
-        pixelformat=None,
-        numthreads=None,
-        index=None,
+            self,
+            level=None,
+            speed=None,
+            tilelog2=None,
+            bitspersample=None,
+            pixelformat=None,
+            numthreads=None,
+            index=None,
     ):
         self.level = level
         self.speed = speed
@@ -212,13 +212,13 @@ class Blosc(Codec):
     codec_id = 'imagecodecs_blosc'
 
     def __init__(
-        self,
-        level=None,
-        compressor=None,
-        typesize=None,
-        blocksize=None,
-        shuffle=None,
-        numthreads=None,
+            self,
+            level=None,
+            compressor=None,
+            typesize=None,
+            blocksize=None,
+            shuffle=None,
+            numthreads=None,
     ):
         self.level = level
         self.compressor = compressor
@@ -251,13 +251,13 @@ class Blosc2(Codec):
     codec_id = 'imagecodecs_blosc2'
 
     def __init__(
-        self,
-        level=None,
-        compressor=None,
-        typesize=None,
-        blocksize=None,
-        shuffle=None,
-        numthreads=None,
+            self,
+            level=None,
+            compressor=None,
+            typesize=None,
+            blocksize=None,
+            shuffle=None,
+            numthreads=None,
     ):
         self.level = level
         self.compressor = compressor
@@ -309,7 +309,7 @@ class ByteShuffle(Codec):
     codec_id = 'imagecodecs_byteshuffle'
 
     def __init__(
-        self, shape, dtype, axis=-1, dist=1, delta=False, reorder=False
+            self, shape, dtype, axis=-1, dist=1, delta=False, reorder=False
     ):
         self.shape = tuple(shape)
         self.dtype = numpy.dtype(dtype).str
@@ -486,13 +486,13 @@ class Heif(Codec):
     codec_id = 'imagecodecs_heif'
 
     def __init__(
-        self,
-        level=None,
-        bitspersample=None,
-        photometric=None,
-        compression=None,
-        numthreads=None,
-        index=None,
+            self,
+            level=None,
+            bitspersample=None,
+            photometric=None,
+            compression=None,
+            numthreads=None,
+            index=None,
     ):
         self.level = level
         self.bitspersample = bitspersample
@@ -528,12 +528,12 @@ class Jetraw(Codec):
     codec_id = 'imagecodecs_jetraw'
 
     def __init__(
-        self,
-        shape,
-        identifier,
-        parameters=None,
-        verbosity=None,
-        errorbound=None,
+            self,
+            shape,
+            identifier,
+            parameters=None,
+            verbosity=None,
+            errorbound=None,
     ):
         self.shape = shape
         self.identifier = identifier
@@ -557,16 +557,16 @@ class Jpeg(Codec):
     codec_id = 'imagecodecs_jpeg'
 
     def __init__(
-        self,
-        bitspersample=None,
-        tables=None,
-        header=None,
-        colorspace_data=None,
-        colorspace_jpeg=None,
-        level=None,
-        subsampling=None,
-        optimize=None,
-        smoothing=None,
+            self,
+            bitspersample=None,
+            tables=None,
+            header=None,
+            colorspace_data=None,
+            colorspace_jpeg=None,
+            level=None,
+            subsampling=None,
+            optimize=None,
+            smoothing=None,
     ):
         self.tables = tables
         self.header = header
@@ -639,16 +639,16 @@ class Jpeg2k(Codec):
     codec_id = 'imagecodecs_jpeg2k'
 
     def __init__(
-        self,
-        level=None,
-        codecformat=None,
-        colorspace=None,
-        tile=None,
-        reversible=None,
-        bitspersample=None,
-        resolutions=None,
-        numthreads=None,
-        verbose=0,
+            self,
+            level=None,
+            codecformat=None,
+            colorspace=None,
+            tile=None,
+            reversible=None,
+            bitspersample=None,
+            resolutions=None,
+            numthreads=None,
+            verbose=0,
     ):
         self.level = level
         self.codecformat = codecformat
@@ -703,21 +703,21 @@ class JpegXl(Codec):
     codec_id = 'imagecodecs_jpegxl'
 
     def __init__(
-        self,
-        # encode
-        level=None,
-        effort=None,
-        distance=None,
-        lossless=None,
-        decodingspeed=None,
-        photometric=None,
-        planar=None,
-        usecontainer=None,
-        # decode
-        index=None,
-        keeporientation=None,
-        # both
-        numthreads=None,
+            self,
+            # encode
+            level=None,
+            effort=None,
+            distance=None,
+            lossless=None,
+            decodingspeed=None,
+            photometric=None,
+            planar=None,
+            usecontainer=None,
+            # decode
+            index=None,
+            keeporientation=None,
+            # both
+            numthreads=None,
     ):
         """
         Return JPEG XL image from numpy array.
@@ -850,12 +850,12 @@ class JpegXr(Codec):
     codec_id = 'imagecodecs_jpegxr'
 
     def __init__(
-        self,
-        level=None,
-        photometric=None,
-        hasalpha=None,
-        resolution=None,
-        fp2int=None,
+            self,
+            level=None,
+            photometric=None,
+            hasalpha=None,
+            resolution=None,
+            fp2int=None,
     ):
         self.level = level
         self.photometric = photometric
@@ -943,11 +943,11 @@ class Lz4f(Codec):
     codec_id = 'imagecodecs_lz4f'
 
     def __init__(
-        self,
-        level=None,
-        blocksizeid=False,
-        contentchecksum=None,
-        blockchecksum=None,
+            self,
+            level=None,
+            blocksizeid=False,
+            contentchecksum=None,
+            blockchecksum=None,
     ):
         self.level = level
         self.blocksizeid = blocksizeid
@@ -1228,16 +1228,16 @@ class Zfp(Codec):
     codec_id = 'imagecodecs_zfp'
 
     def __init__(
-        self,
-        shape=None,
-        dtype=None,
-        strides=None,
-        level=None,
-        mode=None,
-        execution=None,
-        numthreads=None,
-        chunksize=None,
-        header=True,
+            self,
+            shape=None,
+            dtype=None,
+            strides=None,
+            level=None,
+            mode=None,
+            execution=None,
+            numthreads=None,
+            chunksize=None,
+            header=True,
     ):
         if header:
             self.shape = None
